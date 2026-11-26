@@ -1,0 +1,46 @@
+name: Publish release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - app.js
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify application version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_version="$(node -p "require('./package.json').version")"
+          app_version="$(sed -nE 's/^[[:space:]]*const APP_VERSION = "([^"]+)";/\1/p' app.js)"
+          if [[ -z "$app_version" || "$package_version" != "$app_version" ]]; then
+            echo "package.json ($package_version) and APP_VERSION ($app_version) do not match."
+            exit 1
+          fi
+          echo "tag=v$package_version" >> "$GITHUB_OUTPUT"
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "Release ${{ steps.version.outputs.tag }} already exists."
+            exit 0
+          fi
+          gh release create "${{ steps.version.outputs.tag }}" --title "RSS Reader ${{ steps.version.outputs.tag }}" --generate-notes
