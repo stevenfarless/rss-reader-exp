@@ -4453,19 +4453,26 @@ async function runBulkAction(action) {
   const targets = state.items.filter(x => selectedArticleIds.has(x.id));
   if (!targets.length) return;
   if (action === "clear") { clearArticleSelection(); renderList(); return; }
-  if (action === "read") {
-    const changed = targets.filter(x => !x.read);
-    for (const x of changed) { x.read = true; x.readAt = Date.now(); }
-    await putMany(changed);
-    clearArticleSelection(); render();
-    toast(`Marked ${changed.length} article${changed.length === 1 ? "" : "s"} read.`, {label:"Undo",fn:async()=>{for(const x of changed){x.read=false;x.readAt=null;}await putMany(changed);render();}});
-    return;
+  const before = targets.map(x => ({ id:x.id, read:x.read, readAt:x.readAt, saved:x.saved, queued:x.queued, queueOrder:x.queueOrder }));
+  for (const x of targets) {
+    if (action === "read") { x.read = true; x.readAt = Date.now(); }
+    if (action === "unread") { x.read = false; x.readAt = null; }
+    if (action === "save") x.saved = true;
+    if (action === "unsave") x.saved = false;
+    if (action === "queue") { x.queued = true; x.queueOrder ||= Date.now(); }
+    if (action === "dequeue") { x.queued = false; x.queueOrder = 0; }
   }
-  if (action === "save") for (const x of targets) x.saved = true;
-  if (action === "queue") for (const x of targets) { x.queued = true; x.queueOrder ||= Date.now(); }
   await putMany(targets);
   clearArticleSelection(); render();
-  toast(action === "save" ? `Saved ${targets.length} article${targets.length === 1 ? "" : "s"}.` : `Added ${targets.length} article${targets.length === 1 ? "" : "s"} to the queue.`);
+  const labels = {read:"Marked read",unread:"Marked unread",save:"Saved",unsave:"Removed from Saved",queue:"Added to the reading queue",dequeue:"Removed from the reading queue"};
+  toast(`${labels[action] || "Updated"} ${targets.length} article${targets.length === 1 ? "" : "s"}.`, {
+    label:"Undo",
+    fn:async()=>{
+      const previous = new Map(before.map(x=>[x.id,x]));
+      for(const item of targets){const old=previous.get(item.id);if(!old)continue;item.read=old.read;item.readAt=old.readAt;item.saved=old.saved;item.queued=old.queued;item.queueOrder=old.queueOrder;}
+      await putMany(targets);render();
+    }
+  });
 }
 function updateActivityIndicator() {
   const count = state.feeds.filter(f => !!f.error).length;
