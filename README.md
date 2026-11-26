@@ -30,7 +30,7 @@ A reading-focused RSS reader designed to run entirely on GitHub Pages. It uses s
 - JSON settings import and export
 - Subscriptions and preferences stored in browser localStorage
 - Article cache and read/saved state stored in IndexedDB
-- Sidebar-based desktop controls with a searchable command palette, activity center, refresh and focus actions, and persistent pane layout presets; no persistent application top bar
+- Sidebar-based desktop controls with a searchable command palette, activity center, refresh and focus actions, and resizable desktop panes; no persistent application top bar
 - Mobile bottom navigation for All, Unread, Queue, and Saved, with secondary views and actions grouped under More
 - Multi-select articles with bulk mark-read, save, and queue actions, including range selection
 - Touch gestures in the article list to mark read or save, and horizontal navigation between open articles
