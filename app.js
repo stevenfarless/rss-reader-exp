@@ -4606,6 +4606,7 @@ function bindApplicationChrome() {
     longPressTimer = setTimeout(() => {
       swipeHandled = true;
       toggleArticleSelection(row.dataset.item);
+      setTimeout(() => { swipeHandled = false; }, 300);
     }, 550);
   });
   $("#articleList").addEventListener("pointermove", e => {
