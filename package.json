@@ -1,0 +1,17 @@
+{
+  "name": "rss-reader",
+  "private": true,
+  "version": "1.9.21",
+  "description": "Client-only RSS reader hosted on GitHub Pages",
+  "scripts": {
+    "test": "node --test",
+    "test:e2e": "playwright test"
+  },
+  "license": "GPL-3.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}
