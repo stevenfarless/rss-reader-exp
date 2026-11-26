@@ -4792,17 +4792,82 @@ function bindApplicationChrome() {
     setTimeout(()=>{swipeHandled=false;},300);
   });
   $("#articleList").addEventListener("pointercancel",()=>{clearTimeout(longPressTimer);longPressTimer=null;longPressTriggered=false;swipeHandled=false;});
-  $("#reader").addEventListener("pointerdown", e => {
-    if(e.pointerType!=="touch" || e.target.closest("a,button,input,select,audio,video")) return;
-    $("#reader").dataset.swipeStart=[e.clientX,e.clientY].join(",");
+  /* Mobile reader gestures use Pointer Events and a direction-locked
+     recognizer. Vertical scrolling remains native; a right swipe returns
+     to the list, while a left swipe advances to the next visible article. */
+  const reader = $("#reader");
+  let readerSwipe = null;
+  const resetReaderSwipe = () => {
+    reader.classList.remove("is-swipe-tracking");
+    reader.style.removeProperty("--reader-swipe-x");
+    readerSwipe = null;
+  };
+  reader.addEventListener("pointerdown", e => {
+    if (e.pointerType !== "touch" || !e.isPrimary ||
+        !matchMedia("(max-width: 820px)").matches ||
+        !reader.classList.contains("open") || e.clientX <= 24 ||
+        e.target.closest("a,button,input,select,textarea,audio,video,[contenteditable='true'],[role='slider'],[role='button']")) return;
+    readerSwipe = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastX: e.clientX,
+      startedAt: performance.now(),
+      locked: false,
+      direction: 0
+    };
+    try { reader.setPointerCapture(e.pointerId); } catch {}
   });
-  $("#reader").addEventListener("pointerup", e => {
-    const raw=$("#reader").dataset.swipeStart; if(!raw) return; delete $("#reader").dataset.swipeStart;
-    const [x,y]=raw.split(",").map(Number), dx=e.clientX-x, dy=e.clientY-y;
-    if(Math.abs(dx)<90 || Math.abs(dx)<Math.abs(dy)*1.3) return;
-    const items=visible(), index=items.findIndex(i=>i.id===state.selected), next=items[index+(dx<0?1:-1)];
-    if(next) openItem(next.id);
+  reader.addEventListener("pointermove", e => {
+    const gesture = readerSwipe;
+    if (!gesture || e.pointerId !== gesture.pointerId) return;
+    const dx = e.clientX - gesture.startX;
+    const dy = e.clientY - gesture.startY;
+    gesture.lastX = e.clientX;
+    if (!gesture.locked) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return;
+      if (Math.abs(dx) < Math.abs(dy) * 1.35) {
+        resetReaderSwipe();
+        return;
+      }
+      gesture.locked = true;
+      gesture.direction = Math.sign(dx);
+    }
+    if (Math.sign(dx) !== gesture.direction) {
+      resetReaderSwipe();
+      return;
+    }
+    if (gesture.direction > 0) {
+      reader.classList.add("is-swipe-tracking");
+      reader.style.setProperty("--reader-swipe-x", Math.min(dx, 180) + "px");
+    }
   });
+  reader.addEventListener("pointerup", e => {
+    const gesture = readerSwipe;
+    if (!gesture || e.pointerId !== gesture.pointerId) return;
+    const dx = e.clientX - gesture.startX;
+    const dy = e.clientY - gesture.startY;
+    const elapsed = Math.max(1, performance.now() - gesture.startedAt);
+    const velocity = Math.abs(dx) / elapsed;
+    const horizontal = Math.abs(dx) >= Math.abs(dy) * 1.35;
+    const isRightSwipe = dx > 0 && horizontal &&
+      (dx >= 96 || (dx >= 48 && velocity >= 0.65));
+    const isLeftSwipe = dx < 0 && horizontal &&
+      (-dx >= 96 || (-dx >= 56 && velocity >= 0.65));
+    resetReaderSwipe();
+    if (isRightSwipe) {
+      closeReader();
+      return;
+    }
+    if (isLeftSwipe) {
+      const items = visible();
+      const index = items.findIndex(item => item.id === state.selected);
+      const next = items[index + 1];
+      if (next) openItem(next.id);
+    }
+  });
+  reader.addEventListener("pointercancel", resetReaderSwipe);
+  reader.addEventListener("lostpointercapture", resetReaderSwipe);
   window.addEventListener("online",renderActivityCenter);
   window.addEventListener("offline",renderActivityCenter);
   $(".list-pane").addEventListener("scroll",scheduleAppSessionSave,{passive:true});
