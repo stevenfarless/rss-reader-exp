@@ -1,3 +1,10 @@
+## 1.10.7
+
+- Make sidebar tools, Library, and Your Feeds independently collapsible.
+- Prioritize the feed list and reduce feed indentation.
+- Present mobile navigation as a full-height drawer with larger touch targets.
+- Make the mobile reader Back action prominent and labeled.
+
 ## 1.10.6
 
 - Make sidebar tools, Library, and Your Feeds independently collapsible.
