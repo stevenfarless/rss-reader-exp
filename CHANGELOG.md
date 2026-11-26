@@ -1,4 +1,4 @@
-## 1.10.7
+## 1.10.6
 
 - Make sidebar tools, Library, and Your Feeds independently collapsible.
 - Prioritize the feed list and reduce feed indentation.
