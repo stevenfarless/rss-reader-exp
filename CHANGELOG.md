@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.2] - 2026-11-26
+
+### Changed
+- Remove the persistent desktop toolbar and move its application actions into the navigation sidebar.
+- Consolidate desktop navigation, command access, activity, refresh, focus mode, and pane presets in the sidebar.
+- Restore the full viewport height to the three-pane reading workspace.
+
+
 ## [1.10.1] - 2026-11-26
 
 ### Added

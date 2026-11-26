@@ -28,27 +28,39 @@
 <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></symbol>
 </defs></svg>
 <div id="updateBanner" class="update-banner" hidden><span>A new version of RSS Reader is available.</span><button id="updateReload" type="button" class="primary">Reload to update</button><button id="updateDismiss" type="button" class="quiet" aria-label="Dismiss update notice">×</button></div>
-<header id="appToolbar" class="app-toolbar" aria-label="Application toolbar">
-  <button class="app-brand" type="button" data-view="all" aria-label="RSS Reader home"><span class="mark" aria-hidden="true">R</span><span>RSS Reader</span></button>
-  <span class="app-toolbar-divider" aria-hidden="true"></span>
-  <strong id="appbarTitle" class="appbar-title">All articles</strong>
-  <div class="app-toolbar-spacer"></div>
-  <label class="pane-preset-label" for="panePreset">Layout</label>
-  <select id="panePreset" aria-label="Desktop pane layout">
-    <option value="standard">Standard</option><option value="compact">Compact</option><option value="reading">Reading</option><option value="custom">Custom</option>
-  </select>
-  <button id="commandButton" class="toolbar-button" type="button" title="Command palette (Ctrl+K)" aria-label="Open command palette">⌘K</button>
-  <button id="appSearch" class="toolbar-button" type="button" title="Search articles" aria-label="Search articles"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
-  <button id="appRefresh" class="toolbar-button" type="button" title="Refresh feeds" aria-label="Refresh feeds"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg></button>
-  <button id="activityButton" class="toolbar-button activity-button" type="button" title="Activity and feed status" aria-label="Activity and feed status"><span class="activity-dot" aria-hidden="true"></span><span>Activity</span><span id="activityCount" class="activity-count" hidden>0</span></button>
-  <button id="appFocus" class="toolbar-button" type="button" aria-pressed="false" title="Focus reading mode" aria-label="Focus reading mode">Focus</button>
-  <button id="appAdd" class="toolbar-button" type="button" title="Add feed" aria-label="Add feed">＋</button>
-  <button id="appSettings" class="toolbar-button" type="button" title="Settings" aria-label="Settings"><svg class="ic" aria-hidden="true"><use href="#i-settings"/></svg></button>
-</header>
 <div class="layout">
 <aside class="sidebar" id="sidebar">
 <div class="side-head"><button id="sideToggle" aria-label="Collapse sidebar" aria-expanded="true" aria-controls="sidebar" title="Collapse sidebar"><svg class="ic" aria-hidden="true"><use href="#i-collapse"/></svg></button><button class="brand" id="home"><span class="mark" aria-hidden="true">R</span><span>RSS Reader</span></button></div>
-<div class="side-tools"><button id="add" class="quiet" title="Add feed" aria-label="Add feed">+ Add feed</button><button id="theme" title="Toggle theme" aria-label="Toggle theme"><svg class="ic" aria-hidden="true"><use href="#i-theme"/></svg></button><button id="settings" title="Settings" aria-label="Settings"><svg class="ic" aria-hidden="true"><use href="#i-settings"/></svg></button><button class="nav rail-only" type="button" data-view="all" title="All articles" aria-label="All articles">▤</button><button class="nav rail-only" type="button" data-view="unread" title="Unread" aria-label="Unread">●</button><button class="nav rail-only" type="button" data-view="saved" title="Saved" aria-label="Saved">★</button><button class="nav rail-only" type="button" data-rail-next-unread title="Next unread article" aria-label="Next unread article">↓</button><button class="nav rail-only" type="button" id="railTheme" title="Toggle theme" aria-label="Toggle theme">◐</button><button class="nav rail-only" type="button" id="railSettings" title="Settings" aria-label="Settings">⚙</button><button class="nav rail-only" type="button" data-view="snoozed" title="Snoozed" aria-label="Snoozed">◷</button><button class="nav rail-only" type="button" data-view="highlights" title="Highlights" aria-label="Highlights">✎</button><button class="nav rail-only" type="button" data-view="queue" title="Reading queue" aria-label="Reading queue">☷</button><button class="nav rail-only" type="button" data-rail-search title="Search" aria-label="Search">⌕</button><button class="nav rail-only" type="button" data-rail-refresh title="Refresh feeds" aria-label="Refresh feeds">↻</button></div>
+<div class="side-tools">
+  <button id="add" class="quiet" title="Add feed" aria-label="Add feed">+ Add feed</button>
+  <button id="theme" title="Toggle theme" aria-label="Toggle theme"><svg class="ic" aria-hidden="true"><use href="#i-theme"/></svg><span>Theme</span></button>
+  <button id="settings" title="Settings" aria-label="Settings"><svg class="ic" aria-hidden="true"><use href="#i-settings"/></svg><span>Settings</span></button>
+  <button id="commandButton" class="sidebar-action" type="button" title="Command palette (Ctrl+K)" aria-label="Open command palette"><span aria-hidden="true">⌘K</span><span>Commands</span></button>
+  <button id="appSearch" class="sidebar-action" type="button" title="Focus article search" aria-label="Search articles"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span>Search</span></button>
+  <button id="appRefresh" class="sidebar-action" type="button" title="Refresh feeds" aria-label="Refresh feeds"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg><span>Refresh</span></button>
+  <button id="activityButton" class="sidebar-action activity-button" type="button" title="Activity and feed status" aria-label="Activity and feed status"><span class="activity-dot" aria-hidden="true"></span><span>Activity</span><span id="activityCount" class="activity-count" hidden>0</span></button>
+  <button id="appFocus" class="sidebar-action" type="button" aria-pressed="false" title="Focus reading mode" aria-label="Focus reading mode"><span aria-hidden="true">◫</span><span>Focus</span></button>
+  <button class="nav rail-only" type="button" data-view="all" title="All articles" aria-label="All articles">▤</button>
+  <button class="nav rail-only" type="button" data-view="unread" title="Unread" aria-label="Unread">●</button>
+  <button class="nav rail-only" type="button" data-view="saved" title="Saved" aria-label="Saved">★</button>
+  <button class="nav rail-only" type="button" data-rail-next-unread title="Next unread article" aria-label="Next unread article">↓</button>
+  <button class="nav rail-only" type="button" id="railTheme" title="Toggle theme" aria-label="Toggle theme">◐</button>
+  <button class="nav rail-only" type="button" id="railSettings" title="Settings" aria-label="Settings">⚙</button>
+  <button class="nav rail-only" type="button" data-view="snoozed" title="Snoozed" aria-label="Snoozed">◷</button>
+  <button class="nav rail-only" type="button" data-view="highlights" title="Highlights" aria-label="Highlights">✎</button>
+  <button class="nav rail-only" type="button" data-view="queue" title="Reading queue" aria-label="Reading queue">☷</button>
+  <button class="nav rail-only" type="button" data-rail-search title="Search" aria-label="Search">⌕</button>
+  <button class="nav rail-only" type="button" data-rail-refresh title="Refresh feeds" aria-label="Refresh feeds">↻</button>
+  <button class="nav rail-only" type="button" data-rail-commands title="Command palette" aria-label="Command palette">⌘</button>
+  <button class="nav rail-only" type="button" data-rail-activity title="Activity" aria-label="Activity">◉</button>
+  <button class="nav rail-only" type="button" data-rail-focus title="Focus reading mode" aria-label="Focus reading mode">◫</button>
+</div>
+<div class="sidebar-layout">
+  <label for="panePreset">Pane layout</label>
+  <select id="panePreset" aria-label="Desktop pane layout">
+    <option value="standard">Standard</option><option value="compact">Compact</option><option value="reading">Reading</option><option value="custom">Custom</option>
+  </select>
+</div>
 <div class="search" role="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="search" type="search" placeholder="Search articles" aria-label="Search articles"><button type="button" id="searchClear" aria-label="Clear search" hidden><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button><kbd>/</kbd></div>
 <div class="side-label">LIBRARY</div>
 <button class="nav active" data-view="all">All articles <span id="allCount">0</span></button><button class="nav" data-view="unread">Unread <span id="unreadCount">0</span></button><button class="nav" data-view="queue">Reading queue <span id="queueCount">0</span></button>

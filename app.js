@@ -38,7 +38,7 @@ const PROXY_TIMEOUT_MS = 30000;
 const MAX_ITEMS_PER_FEED = 200;
 /* The version shown in Settings and in the update check (#144). Bump
    it with every release, alongside package.json and the SW cache. */
-const APP_VERSION = "1.10.1";
+const APP_VERSION = "1.10.2";
 
 const state = {
   feeds: [], items: [], highlights: [], view: "all", feed: null, folder: null, filter: "all",
@@ -2116,7 +2116,6 @@ function renderList() {
   renderSelectionToolbar();
   const titles = { all: "All articles", unread: "Unread", queue: "Reading queue", saved: "Saved", snoozed: "Snoozed", highlights: "Highlights", feed: state.feeds.find(f => f.id === state.feed)?.title || "Feed", folder: state.folder || "Folder", savedSearch: state.savedSearches.find(s => s.id === state.savedSearch)?.name || "Saved search", tag: state.tag ? "Tag: " + state.tag : "Tag" };
   $("#heading").textContent = titles[state.view];
-  const appbarTitle = $("#appbarTitle"); if (appbarTitle) appbarTitle.textContent = titles[state.view];
   $("#removeQueue").hidden = state.view !== "queue";
   $("#mobileTitle").textContent = titles[state.view];
   // The Highlights view (#116) lists the highlights themselves, newest
@@ -2586,8 +2585,10 @@ function renderReader(x) {
   const tagsRowHTML = ((x.tags || []).length || tagsOpen) ? `<div class="tags-row" id="tagsRow">${(x.tags || []).map(t => `<span class="tag-chip">${esc(t)}<button type="button" data-tag-remove="${esc(t)}" aria-label="Remove tag ${esc(t)}">${icon("close")}</button></span>`).join("")}<span id="tagInputWrap" ${tagsOpen ? "" : "hidden"}><input id="tagInput" list="tagList" placeholder="Add a tag… (t)" aria-label="Add a tag"><button type="button" class="quiet" id="tagAddBtn">Add</button></span></div>` : "";
   const hasNote = !!getArticleNote(x.id);
   const readerFeedTitle = f ? feedDisplayTitle(f) : x.feedTitle;
-  $("#reader").innerHTML = `${progTop ? barHTML : ""}<div class="reader-content"><div class="reader-top"><span title="${esc(readerFeedTitle)}" aria-label="${esc(readerFeedTitle)}">${esc(readerFeedTitle)}</span><div class="reader-actions">${toolbarOrder().map(k => toolbarButtonHTML(k, x, {fullLabel, canListen, canFull, hasNote})).join("")}<button type="button" class="reader-btn" data-reader="queue" title="${x.queued ? "Remove from queue" : "Add to reading queue"}" aria-label="${x.queued ? "Remove from reading queue" : "Add to reading queue"}" aria-pressed="${!!x.queued}">${x.queued ? "☷" : "＋"}</button></div></div>${tagsRowHTML}${snoozeMenuHTML(x)}${ttsBarHTML(x)}<h1>${esc(x.title)}</h1><div class="byline">${[x.author ? esc(x.author) : "", esc(d ? fmtDateTime(d) : "No date"), rt].filter(Boolean).join(" · ")}</div>${articleNoteHTML(x)}${audioHTML}<div class="reader-body" id="body"></div><div class="reader-footer"><p>${showingFull ? "Full article text, extracted from the original page." : "Content supplied by the publisher's feed."}</p></div>${highlightsSectionHTML(x)}</div>${progTop ? "" : barHTML}`;
+  $("#reader").innerHTML = `${progTop ? barHTML : ""}<div class="reader-content"><div class="reader-top"><button type="button" id="focusExit" class="focus-exit" title="Exit focus reading mode">Exit focus</button><span title="${esc(readerFeedTitle)}" aria-label="${esc(readerFeedTitle)}">${esc(readerFeedTitle)}</span><div class="reader-actions">${toolbarOrder().map(k => toolbarButtonHTML(k, x, {fullLabel, canListen, canFull, hasNote})).join("")}<button type="button" class="reader-btn" data-reader="queue" title="${x.queued ? "Remove from queue" : "Add to reading queue"}" aria-label="${x.queued ? "Remove from reading queue" : "Add to reading queue"}" aria-pressed="${!!x.queued}">${x.queued ? "☷" : "＋"}</button></div></div>${tagsRowHTML}${snoozeMenuHTML(x)}${ttsBarHTML(x)}<h1>${esc(x.title)}</h1><div class="byline">${[x.author ? esc(x.author) : "", esc(d ? fmtDateTime(d) : "No date"), rt].filter(Boolean).join(" · ")}</div>${articleNoteHTML(x)}${audioHTML}<div class="reader-body" id="body"></div><div class="reader-footer"><p>${showingFull ? "Full article text, extracted from the original page." : "Content supplied by the publisher's feed."}</p></div>${highlightsSectionHTML(x)}</div>${progTop ? "" : barHTML}`;
   setupReaderToolbarOverflow();
+  const focusExit = $("#focusExit");
+  if (focusExit) focusExit.onclick = () => { document.body.classList.remove("focus-mode"); updateFocusButton(); };
   const tagAdd = $("#tagAddBtn");
   if (tagAdd) tagAdd.onclick = () => { const x = selectedItem(); const inp = $("#tagInput"); if (x && inp) addTagToItem(x, inp.value); };
   const bodyEl = $("#body");
@@ -4657,7 +4658,9 @@ function updateFocusButton() {
   if (!button) return;
   const active = document.body.classList.contains("focus-mode");
   button.setAttribute("aria-pressed",String(active));
-  button.textContent = active ? "Exit focus" : "Focus";
+  const label = button.querySelector("span:last-child");
+  if (label) label.textContent = active ? "Exit focus" : "Focus";
+  else button.textContent = active ? "Exit focus" : "Focus";
   button.title = active ? "Exit focus reading mode" : "Focus reading mode";
 }
 function toggleFocusMode() {
@@ -4673,11 +4676,12 @@ function bindApplicationChrome() {
   $("#commandButton").onclick = showCommandPalette;
   $("#appSearch").onclick = focusSearch;
   $("#appRefresh").onclick = () => refresh();
-  $("#appAdd").onclick = showFeed;
-  $("#appSettings").onclick = showSettings;
   $("#activityButton").onclick = showActivityCenter;
   $("#appFocus").onclick = toggleFocusMode;
   $("#panePreset").onchange = e => applyPanePreset(e.target.value);
+  document.querySelectorAll("[data-rail-commands]").forEach(button => button.addEventListener("click", showCommandPalette));
+  document.querySelectorAll("[data-rail-activity]").forEach(button => button.addEventListener("click", showActivityCenter));
+  document.querySelectorAll("[data-rail-focus]").forEach(button => button.addEventListener("click", toggleFocusMode));
   $("#commandInput").addEventListener("input", () => { commandActiveIndex=0; renderCommandResults(); });
   $("#commandInput").addEventListener("keydown", e => {
     const options = [...$("#commandResults").querySelectorAll("[data-command-id]")];

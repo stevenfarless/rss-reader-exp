@@ -1,10 +1,12 @@
 import { test, expect } from "@playwright/test";
 
-test("desktop application toolbar opens commands and activity", async ({ page }) => {
+test("desktop sidebar controls open commands and activity without a top toolbar", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await expect(page.locator("#appToolbar")).toBeVisible();
-  await expect(page.locator("#appbarTitle")).toHaveText("All articles");
+  await expect(page.locator("#appToolbar")).toHaveCount(0);
+  await expect(page.locator("#sidebar")).toBeVisible();
+  await expect(page.locator("#commandButton")).toBeVisible();
+  await expect(page.locator("#panePreset")).toBeVisible();
 
   await page.locator("#commandButton").click();
   await expect(page.locator("#commandDialog")).toBeVisible();
