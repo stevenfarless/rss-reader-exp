@@ -4658,7 +4658,9 @@ function updateFocusButton() {
   if (!button) return;
   const active = document.body.classList.contains("focus-mode");
   button.setAttribute("aria-pressed",String(active));
-  button.textContent = active ? "Exit focus" : "Focus";
+  const label = button.querySelector("span:last-child");
+  if (label) label.textContent = active ? "Exit focus" : "Focus";
+  else button.textContent = active ? "Exit focus" : "Focus";
   button.title = active ? "Exit focus reading mode" : "Focus reading mode";
 }
 function toggleFocusMode() {
