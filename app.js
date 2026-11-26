@@ -38,7 +38,7 @@ const PROXY_TIMEOUT_MS = 30000;
 const MAX_ITEMS_PER_FEED = 200;
 /* The version shown in Settings and in the update check (#144). Bump
    it with every release, alongside package.json and the SW cache. */
-const APP_VERSION = "1.10.1";
+const APP_VERSION = "1.10.2";
 
 const state = {
   feeds: [], items: [], highlights: [], view: "all", feed: null, folder: null, filter: "all",
@@ -2116,7 +2116,6 @@ function renderList() {
   renderSelectionToolbar();
   const titles = { all: "All articles", unread: "Unread", queue: "Reading queue", saved: "Saved", snoozed: "Snoozed", highlights: "Highlights", feed: state.feeds.find(f => f.id === state.feed)?.title || "Feed", folder: state.folder || "Folder", savedSearch: state.savedSearches.find(s => s.id === state.savedSearch)?.name || "Saved search", tag: state.tag ? "Tag: " + state.tag : "Tag" };
   $("#heading").textContent = titles[state.view];
-  const appbarTitle = $("#appbarTitle"); if (appbarTitle) appbarTitle.textContent = titles[state.view];
   $("#removeQueue").hidden = state.view !== "queue";
   $("#mobileTitle").textContent = titles[state.view];
   // The Highlights view (#116) lists the highlights themselves, newest
@@ -4673,11 +4672,12 @@ function bindApplicationChrome() {
   $("#commandButton").onclick = showCommandPalette;
   $("#appSearch").onclick = focusSearch;
   $("#appRefresh").onclick = () => refresh();
-  $("#appAdd").onclick = showFeed;
-  $("#appSettings").onclick = showSettings;
   $("#activityButton").onclick = showActivityCenter;
   $("#appFocus").onclick = toggleFocusMode;
   $("#panePreset").onchange = e => applyPanePreset(e.target.value);
+  $("[data-rail-commands]").forEach(button => button.addEventListener("click", showCommandPalette));
+  $("[data-rail-activity]").forEach(button => button.addEventListener("click", showActivityCenter));
+  $("[data-rail-focus]").forEach(button => button.addEventListener("click", toggleFocusMode));
   $("#commandInput").addEventListener("input", () => { commandActiveIndex=0; renderCommandResults(); });
   $("#commandInput").addEventListener("keydown", e => {
     const options = [...$("#commandResults").querySelectorAll("[data-command-id]")];
