@@ -54,6 +54,36 @@ test("desktop sidebar automatically collapses before its controls become cramped
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("rss-reader.settings.v1")).sidebarWidth)).toBe(230);
 });
 
+test("article selection controls appear only after entering selection mode", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const request = indexedDB.open("rss-reader-cache", 3);
+    const db = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("items", "readwrite");
+      tx.objectStore("items").put({ id:"selection-mode-article", feedId:"selection-mode-feed", feedTitle:"Selection Test Feed", title:"Article for selection mode", url:"https://example.com/selection-mode", summary:"Test article", content:"<p>Selection test content.</p>", published:new Date().toISOString(), read:false, saved:false, queued:false, tags:[] });
+      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  });
+  await page.reload();
+  const article = page.locator('[data-item="selection-mode-article"]');
+  await expect(article).toBeVisible();
+  await expect(article.locator("[data-select-item]")).toBeHidden();
+  await expect(page.locator("#selectionToolbar")).toBeHidden();
+  await page.locator("#selectArticlesBtn").click();
+  await expect(page.locator("#selectArticlesBtn")).toHaveText("Done");
+  await expect(article.locator("[data-select-item]")).toBeVisible();
+  await expect(page.locator("#selectionToolbar")).toBeHidden();
+  await article.locator("[data-select-item]").click();
+  await expect(page.locator("#selectionToolbar")).toBeVisible();
+  await expect(page.locator("#selectionCount")).toHaveText("1 selected");
+  await page.locator("#selectArticlesBtn").click();
+  await expect(page.locator("#selectArticlesBtn")).toHaveText("Select");
+  await expect(article.locator("[data-select-item]")).toBeHidden();
+  await expect(page.locator("#selectionToolbar")).toBeHidden();
+});
 test("mobile navigation exposes primary and secondary library views", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

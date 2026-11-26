@@ -570,8 +570,8 @@ body.shortcut-bar-visible .layout{margin-bottom:38px}
 .selection-toolbar span{font-size:12px;color:var(--muted);font-weight:650;margin-right:auto}
 .selection-toolbar button{border:1px solid var(--line);border-radius:5px;background:var(--bg);padding:5px 9px;font-size:11px}
 .article{position:relative}
-.article-select{width:25px;height:25px;flex:none;display:grid;place-items:center;align-self:flex-start;margin:2px 0 0;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--accent);font-size:13px;opacity:0;transition:opacity .12s}
-.article:hover .article-select,.article:focus-within .article-select,.article.multi-selected .article-select{opacity:1}
+.article-select{width:25px;height:25px;flex:none;display:grid;place-items:center;align-self:flex-start;margin:2px 0 0;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--accent);font-size:13px;cursor:pointer}
+.article-select[hidden]{display:none}
 .article.multi-selected{outline:1px solid var(--accent);outline-offset:-1px;background:var(--accentbg)}
 .command-dialog{width:min(560px,calc(100% - 28px));max-height:min(640px,calc(100dvh - 40px));padding:22px}
 .command-dialog h2{font-size:22px;margin-bottom:14px}
@@ -612,7 +612,6 @@ body.focus-mode .reader-content{max-width:850px}
  .mobile-tab small{font-size:10px;font-weight:600}
  .mobile-tab.active{color:var(--accent);background:var(--accentbg)}
  body.reader-open .mobile-navigation,body.focus-mode .mobile-navigation{display:none}
- .article-select{opacity:1;width:30px;height:30px}
  .selection-toolbar{position:sticky;top:0;z-index:3}
  body.focus-mode .reader{padding:calc(22px + env(safe-area-inset-top)) 19px calc(78px + env(safe-area-inset-bottom))}
  body.focus-mode .reader-actions{position:fixed}
@@ -621,6 +620,5 @@ body.focus-mode .reader-content{max-width:850px}
  .more-grid{grid-template-columns:1fr}
  .selection-toolbar button{flex:1}
 }
-@media(hover:none){.article-select{opacity:1}}
 
 @media(max-width:820px){#toast{bottom:calc(70px + env(safe-area-inset-bottom))}}
