@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.3] - 2026-11-26
+
+### Changed
+- Remove the sidebar pane-layout preset control; pane widths remain adjustable with the existing splitters.
+- Add searchable quick settings to the command palette, with current values, immediate application, persistence, and confirmation feedback.
+
+
 ## [1.10.2] - 2026-11-26
 
 ### Changed
