@@ -870,6 +870,7 @@ function applyPaneWidths() {
   if (ss) ss.setAttribute("aria-valuenow", String(side));
   if (sl) sl.setAttribute("aria-valuenow", String(list));
   positionSplitters();
+  if (typeof updatePanePresetSelect === "function") updatePanePresetSelect();
 }
 /* Place the splitter handles on the panes' right edges. Skipped on
    mobile, where the sidebar is a drawer and the splitters are hidden. */
@@ -4419,6 +4420,7 @@ async function markAboveBelow(which) {
 const selectedArticleIds = new Set();
 let lastSelectedArticleId = null;
 let swipeHandled = false;
+let longPressTimer = null;
 function clearArticleSelection() {
   selectedArticleIds.clear();
   lastSelectedArticleId = null;
@@ -4600,8 +4602,20 @@ function bindApplicationChrome() {
     if (e.pointerType !== "touch" || e.target.closest("button,a,input,select")) return;
     const row=e.target.closest("[data-item]"); if(!row) return;
     row.dataset.swipeStart = [e.clientX,e.clientY].join(",");
+    clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+      swipeHandled = true;
+      toggleArticleSelection(row.dataset.item);
+    }, 550);
+  });
+  $("#articleList").addEventListener("pointermove", e => {
+    if (!longPressTimer) return;
+    const row=e.target.closest("[data-item]"); if(!row?.dataset.swipeStart) return;
+    const [x,y]=row.dataset.swipeStart.split(",").map(Number);
+    if(Math.abs(e.clientX-x)>12 || Math.abs(e.clientY-y)>12){clearTimeout(longPressTimer);longPressTimer=null;}
   });
   $("#articleList").addEventListener("pointerup", async e => {
+    clearTimeout(longPressTimer); longPressTimer=null;
     const row=e.target.closest("[data-item]"); if(!row?.dataset.swipeStart) return;
     const [x,y]=row.dataset.swipeStart.split(",").map(Number); delete row.dataset.swipeStart;
     const dx=e.clientX-x, dy=e.clientY-y;
@@ -4612,7 +4626,7 @@ function bindApplicationChrome() {
     else {item.saved=!item.saved;await put(item);renderNav();renderList();toast(item.saved?"Saved article.":"Removed from saved.");}
     setTimeout(()=>{swipeHandled=false;},300);
   });
-  $("#articleList").addEventListener("pointercancel",()=>{swipeHandled=false;});
+  $("#articleList").addEventListener("pointercancel",()=>{clearTimeout(longPressTimer);longPressTimer=null;swipeHandled=false;});
   $("#reader").addEventListener("pointerdown", e => {
     if(e.pointerType!=="touch" || e.target.closest("a,button,input,select,audio,video")) return;
     $("#reader").dataset.swipeStart=[e.clientX,e.clientY].join(",");
@@ -5283,7 +5297,7 @@ function bind() {
       e.preventDefault();
       return;
     }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" && !dialogOpen) {
       e.preventDefault();
       showCommandPalette();
       return;
