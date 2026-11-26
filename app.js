@@ -4421,6 +4421,7 @@ const selectedArticleIds = new Set();
 let lastSelectedArticleId = null;
 let swipeHandled = false;
 let longPressTimer = null;
+let longPressTriggered = false;
 function clearArticleSelection() {
   selectedArticleIds.clear();
   lastSelectedArticleId = null;
@@ -4486,6 +4487,28 @@ function renderActivityCenter() {
   root.innerHTML = `<div class="activity-status"><span class="status-indicator ${online ? "online" : "offline"}"></span><div><strong>${online ? "Online" : "Offline"}</strong><p>${online ? "Network connection is available." : "Check your connection. Feed refreshes may fail until you reconnect."}</p></div></div><div class="activity-status"><span class="status-indicator ${refreshing ? "busy" : "idle"}"></span><div><strong>${refreshing ? "Refreshing feeds" : "Refresh idle"}</strong><p>${refreshing ? "Feed updates are being retrieved." : "Last refresh: " + esc(last)}</p></div></div><section class="activity-errors"><h3>Feed problems <span>${errors.length}</span></h3>${errors.length ? errors.map(f => `<div class="activity-feed"><button type="button" data-activity-feed="${esc(f.id)}"><strong>${esc(feedDisplayTitle(f))}</strong><small>${esc(f.error)}</small></button><button type="button" data-activity-retry="${esc(f.id)}">Retry</button></div>`).join("") : '<p class="muted">All subscribed feeds are healthy.</p>'}</section>`;
 }
 function showActivityCenter() { renderActivityCenter(); $("#activityDialog").showModal(); }
+function goFeedById(feedId) {
+  const feed = state.feeds.find(f => f.id === feedId);
+  if (!feed) return;
+  clearArticleSelection();
+  document.body.classList.remove("focus-mode", "reader-open");
+  updateFocusButton();
+  stopTTS();
+  state.view = "feed"; state.feed = feed.id; state.folder = null; state.tag = null; state.savedSearch = null; state.selected = null;
+  $("#reader").classList.remove("open");
+  render();
+}
+function focusSearch() {
+  if (matchMedia("(max-width:820px)").matches) {
+    $("#sidebar").classList.add("open");
+    $("#scrim").classList.add("show");
+  } else if (state.settings.sidebarCollapsed) {
+    state.settings.sidebarCollapsed = false;
+    local(S,state.settings);
+    applySidebarCollapsed();
+  }
+  $("#search").focus();
+}
 const COMMANDS = [
   ["all","All articles","Library",()=>goView("all")],
   ["unread","Open unread articles","Library",()=>goView("unread")],
@@ -4495,7 +4518,7 @@ const COMMANDS = [
   ["highlights","Open highlights","Library",()=>goView("highlights")],
   ["refresh","Refresh all feeds","Feeds",()=>refresh()],
   ["add","Add a feed","Feeds",()=>showFeed()],
-  ["search","Search articles","Navigation",()=>$("#search").focus()],
+  ["search","Search articles","Navigation",focusSearch],
   ["settings","Open settings","Application",()=>showSettings()],
   ["activity","Open activity center","Application",()=>showActivityCenter()],
   ["sidebar","Toggle feed sidebar","Layout",()=>toggleSidebar()],
@@ -4507,7 +4530,9 @@ const COMMANDS = [
 let commandActiveIndex = 0;
 function renderCommandResults() {
   const q = ($("#commandInput")?.value || "").trim().toLowerCase();
-  const matches = COMMANDS.filter(c => (c[1] + " " + c[2]).toLowerCase().includes(q));
+  const feedCommands = state.feeds.map(f => [`feed-${f.id}`, `Open feed: ${feedDisplayTitle(f)}`, "Feeds", () => goFeedById(f.id)]);
+  const articleCommands = q.length >= 2 ? visible().filter(x => (x.title || "").toLowerCase().includes(q)).slice(0,8).map(x => [`article-${x.id}`, x.title, feedTitleFor(x), () => openItem(x.id)]) : [];
+  const matches = [...COMMANDS, ...feedCommands, ...articleCommands].filter(c => (c[1] + " " + c[2]).toLowerCase().includes(q));
   commandActiveIndex = Math.min(commandActiveIndex, Math.max(0, matches.length - 1));
   $("#commandResults").innerHTML = matches.length ? matches.map((c,i)=>`<button type="button" role="option" aria-selected="${i===commandActiveIndex}" data-command-id="${c[0]}"><span><strong>${esc(c[1])}</strong><small>${esc(c[2])}</small></span><kbd>${i===commandActiveIndex ? "↵" : ""}</kbd></button>`).join("") : '<p class="muted">No matching commands.</p>';
 }
@@ -4562,7 +4587,7 @@ function toggleFocusMode() {
 }
 function bindApplicationChrome() {
   $("#commandButton").onclick = showCommandPalette;
-  $("#appSearch").onclick = () => { $("#search").focus(); if (matchMedia("(max-width:820px)").matches) $("#sidebar").classList.add("open"), $("#scrim").classList.add("show"); };
+  $("#appSearch").onclick = focusSearch;
   $("#appRefresh").onclick = () => refresh();
   $("#appAdd").onclick = showFeed;
   $("#appSettings").onclick = showSettings;
@@ -4579,7 +4604,7 @@ function bindApplicationChrome() {
   $("#mobileMore").onclick = () => $("#moreDialog").showModal();
   $("#moreDone").onclick = () => $("#moreDialog").close();
   $("#moreFeeds").onclick = () => { $("#moreDialog").close(); $("#sidebar").classList.add("open"); $("#scrim").classList.add("show"); };
-  $("#moreSearch").onclick = () => { $("#moreDialog").close(); $("#sidebar").classList.add("open"); $("#scrim").classList.add("show"); $("#search").focus(); };
+  $("#moreSearch").onclick = () => { $("#moreDialog").close(); focusSearch(); };
   $("#moreAdd").onclick = () => { $("#moreDialog").close(); showFeed(); };
   $("#moreRefresh").onclick = () => { $("#moreDialog").close(); refresh(); };
   $("#moreActivity").onclick = () => { $("#moreDialog").close(); showActivityCenter(); };
@@ -4604,9 +4629,8 @@ function bindApplicationChrome() {
     row.dataset.swipeStart = [e.clientX,e.clientY].join(",");
     clearTimeout(longPressTimer);
     longPressTimer = setTimeout(() => {
-      swipeHandled = true;
+      longPressTriggered = true;
       toggleArticleSelection(row.dataset.item);
-      setTimeout(() => { swipeHandled = false; }, 300);
     }, 550);
   });
   $("#articleList").addEventListener("pointermove", e => {
@@ -4617,6 +4641,12 @@ function bindApplicationChrome() {
   });
   $("#articleList").addEventListener("pointerup", async e => {
     clearTimeout(longPressTimer); longPressTimer=null;
+    if (longPressTriggered) {
+      longPressTriggered = false;
+      swipeHandled = true;
+      setTimeout(() => { swipeHandled = false; }, 500);
+      return;
+    }
     const row=e.target.closest("[data-item]"); if(!row?.dataset.swipeStart) return;
     const [x,y]=row.dataset.swipeStart.split(",").map(Number); delete row.dataset.swipeStart;
     const dx=e.clientX-x, dy=e.clientY-y;
@@ -4627,7 +4657,7 @@ function bindApplicationChrome() {
     else {item.saved=!item.saved;await put(item);renderNav();renderList();toast(item.saved?"Saved article.":"Removed from saved.");}
     setTimeout(()=>{swipeHandled=false;},300);
   });
-  $("#articleList").addEventListener("pointercancel",()=>{clearTimeout(longPressTimer);longPressTimer=null;swipeHandled=false;});
+  $("#articleList").addEventListener("pointercancel",()=>{clearTimeout(longPressTimer);longPressTimer=null;longPressTriggered=false;swipeHandled=false;});
   $("#reader").addEventListener("pointerdown", e => {
     if(e.pointerType!=="touch" || e.target.closest("a,button,input,select,audio,video")) return;
     $("#reader").dataset.swipeStart=[e.clientX,e.clientY].join(",");
