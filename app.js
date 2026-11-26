@@ -38,7 +38,7 @@ const PROXY_TIMEOUT_MS = 30000;
 const MAX_ITEMS_PER_FEED = 200;
 /* The version shown in Settings and in the update check (#144). Bump
    it with every release, alongside package.json and the SW cache. */
-const APP_VERSION = "1.10.3";
+const APP_VERSION = "1.10.4";
 
 const state = {
   feeds: [], items: [], highlights: [], view: "all", feed: null, folder: null, filter: "all",
@@ -831,8 +831,13 @@ function applySettings() {
 /* Sidebar collapse: the sidebar becomes a 52px rail holding only the
    toggle (top left), so the list and reader get the full width. The
    choice persists with the other settings. */
+const SIDEBAR_AUTO_COLLAPSE_WIDTH = 230;
+
 function applySidebarCollapsed() {
-  const collapsed = !!state.settings.sidebarCollapsed;
+  const manuallyCollapsed = !!state.settings.sidebarCollapsed;
+  const autoCollapsed = !manuallyCollapsed
+    && Number(state.settings.sidebarWidth) < SIDEBAR_AUTO_COLLAPSE_WIDTH;
+  const collapsed = manuallyCollapsed || autoCollapsed;
   document.body.classList.toggle("sidebar-collapsed", collapsed);
   if (collapsed) {
     document.documentElement.style.setProperty(
@@ -917,6 +922,7 @@ function bindSplitter(el, kind) {
       el.removeEventListener("pointermove", move);
       el.removeEventListener("pointerup", up);
       el.removeEventListener("pointercancel", up);
+      if (kind === "side") applySidebarCollapsed();
       local(S, state.settings);
     };
     el.addEventListener("pointermove", move);
@@ -926,6 +932,7 @@ function bindSplitter(el, kind) {
   el.addEventListener("dblclick", () => {
     state.settings[key] = range.def;
     applyPaneWidths();
+    if (kind === "side") applySidebarCollapsed();
     local(S, state.settings);
   });
   el.addEventListener("keydown", e => {
@@ -933,6 +940,7 @@ function bindSplitter(el, kind) {
     e.preventDefault();
     state.settings[key] = clampW(state.settings[key] + (e.key === "ArrowRight" ? 10 : -10), range);
     applyPaneWidths();
+    if (kind === "side") applySidebarCollapsed();
     local(S, state.settings);
   });
 }
@@ -5302,7 +5310,14 @@ function bind() {
     $("#scrim").classList.toggle("show", open);
   };
   $("#sideToggle").onclick = () => {
-    state.settings.sidebarCollapsed = !state.settings.sidebarCollapsed;
+    const width = Number(state.settings.sidebarWidth) || SIDE_W.def;
+    if (state.settings.sidebarCollapsed || width < SIDEBAR_AUTO_COLLAPSE_WIDTH) {
+      state.settings.sidebarCollapsed = false;
+      state.settings.sidebarWidth = Math.max(width, SIDEBAR_AUTO_COLLAPSE_WIDTH);
+      applyPaneWidths();
+    } else {
+      state.settings.sidebarCollapsed = true;
+    }
     local(S, state.settings);
     applySidebarCollapsed();
   };
