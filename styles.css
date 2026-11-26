@@ -289,7 +289,7 @@ body:not(.mobile-bar-top) .reader-actions .menu{top:auto;bottom:calc(100% + 6px)
 .reader-spinner{width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:readerSpin .7s linear infinite}
 @keyframes readerSpin{to{transform:rotate(360deg)}}
 /* Single-row reader header and responsive action overflow (#204). */
-.reader-top{min-width:0;gap:10px;flex-wrap:nowrap;overflow:visible}
+.focus-exit{display:none;flex:none;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--muted);padding:5px 9px;font-size:11px}body.focus-mode .focus-exit{display:inline-flex}.reader-top{min-width:0;gap:10px;flex-wrap:nowrap;overflow:visible}
 .reader-top>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .reader-actions{flex:0 1 auto;min-width:0;flex-wrap:nowrap;overflow:visible}
 .reader-actions>.reader-btn{flex:none}
