@@ -13,6 +13,14 @@ test("desktop application toolbar opens commands and activity", async ({ page })
   await expect(page.locator("#settingsDialog")).toBeVisible();
   await page.locator("#settingsDialog .x").click();
 
+  await page.keyboard.press("Control+k");
+  await expect(page.locator("#commandDialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.locator("#panePreset").selectOption("compact");
+  await expect(page.locator("html")).toHaveCSS("--side-w", "205px");
+  await page.reload();
+  await expect(page.locator("#panePreset")).toHaveValue("compact");
+
   await page.locator("#activityButton").click();
   await expect(page.locator("#activityDialog")).toBeVisible();
   await expect(page.locator("#activityContent")).toContainText("Online");
