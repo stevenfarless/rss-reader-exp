@@ -23,6 +23,7 @@ const $$ = s => [...document.querySelectorAll(s)];
 const K = "rss-reader.feeds.v1", S = "rss-reader.settings.v1", DB = "rss-reader-cache";
 const KF = "rss-reader.folders.v1", KT = "rss-reader.tags.v1", LR = "rss-reader.lastRefresh.v1";
 const KS = "rss-reader.savedSearches.v1", KR = "rss-reader.rules.v1";
+const SESSION_KEY = "rss-reader.session.v1";
 const PROXY_API = "https://api.rss2json.com/v1/api.json?rss_url=";
 const ALLORIGINS = "https://api.allorigins.win/raw?url=";
 const JINA = "https://r.jina.ai/";
@@ -45,7 +46,7 @@ const state = {
   folders: [], tags: [], savedSearches: [], rules: [],
   settings: { theme: "dark", width: "comfortable", size: "normal", readerFont: "serif", lineHeight: "comfortable", ttsRate: 1, hideDuplicates: true, sidebarCollapsed: false, sidebarWidth: 250, listWidth: 400, sort: "newest", filter: "all", progressPosition: "bottom", cardExcerpt: "full", cardImage: true, backgroundSync: false, notifyNew: false, mobileReaderBar: "bottom", shortcutPreset: "inoreader", shortcutCoaching: matchMedia("(min-width:821px)").matches, shortcutCoachingExplicit: false, shortcutBar: true, retentionDays: 0, retentionCount: 0, globalRefreshMinutes: 30 }
 };
-let db, timer, pendingSeq = null, pendingSeqTimer = null, refreshAt = 0, orgEdit = null, pendingDelete = null, searchTimer = null, ruleEdit = null, automaticRefreshTimer = null;
+let db, timer, pendingSeq = null, pendingSeqTimer = null, refreshAt = 0, orgEdit = null, pendingDelete = null, searchTimer = null, ruleEdit = null, automaticRefreshTimer = null, sessionSaveTimer = null;
 /* Text-to-speech state (#105): the article being read, its sentence
    chunks, and where playback has reached. Null when nothing is playing. */
 let tts = null;
@@ -2179,6 +2180,7 @@ function renderList() {
   const ss = $("#saveSearchBtn");
   if (ss) ss.hidden = !state.query;
   renderSelectionToolbar();
+  scheduleAppSessionSave();
 }
 
 /* ---------- sanitising ---------- */
@@ -3016,6 +3018,7 @@ function openItem(itemId) {
   if (ma) { ma.disabled = !row; ma.title = row ? "Marks every article above the open one read (Ctrl+M)" : "Open an article first — this acts on the articles around it."; }
   if (mb) { mb.disabled = !row; mb.title = row ? "Marks every article below the open one read (Shift+M)" : "Open an article first — this acts on the articles around it."; }
   renderReader(x);
+  saveAppSession();
   // Auto full article (#183): this feed always loads the full article
   // text when an article is opened, unless the feed already carries it
   // or the full text is already fetched.
@@ -3038,6 +3041,66 @@ function closeReader() {
     try { history.back(); } catch {}
   }
 }
+
+/* Restore the reader's local navigation context after a reload or PWA
+   relaunch. Only view state and scroll positions are stored; feeds,
+   articles, and reading data remain in their existing local stores. */
+function saveAppSession() {
+  const list = $(".list-pane"), reader = $("#reader");
+  const session = {
+    view: state.view,
+    feed: state.feed,
+    folder: state.folder,
+    tag: state.tag,
+    savedSearch: state.savedSearch,
+    selected: state.selected,
+    query: state.query,
+    filter: state.filter,
+    sort: state.sort,
+    listScroll: list?.scrollTop || 0,
+    readerScroll: reader?.scrollTop || 0,
+    savedAt: Date.now()
+  };
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch {}
+}
+function scheduleAppSessionSave() {
+  clearTimeout(sessionSaveTimer);
+  sessionSaveTimer = setTimeout(saveAppSession, 180);
+}
+function restoreAppSession() {
+  let session;
+  try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch { return false; }
+  if (!session || typeof session !== "object") return false;
+  const views = ["all","unread","queue","saved","snoozed","highlights","feed","folder","savedSearch","tag"];
+  if (!views.includes(session.view)) return false;
+  if (session.view === "feed" && !state.feeds.some(f => f.id === session.feed)) return false;
+  if (session.view === "folder" && !state.feeds.some(f => f.group === session.folder)) return false;
+  if (session.view === "savedSearch" && !state.savedSearches.some(s => s.id === session.savedSearch)) return false;
+  if (session.view === "tag" && !state.tags.includes(session.tag)) return false;
+  state.view = session.view;
+  state.feed = session.view === "feed" ? session.feed : null;
+  state.folder = session.view === "folder" ? session.folder : null;
+  state.tag = session.view === "tag" ? session.tag : null;
+  state.savedSearch = session.view === "savedSearch" ? session.savedSearch : null;
+  state.query = typeof session.query === "string" ? session.query.slice(0,500) : "";
+  state.filter = ["all","today","week"].includes(session.filter) ? session.filter : "all";
+  state.sort = session.sort === "oldest" ? "oldest" : "newest";
+  $("#search").value = state.query;
+  $("#searchClear").hidden = !state.query;
+  state.selected = typeof session.selected === "string" && state.items.some(x => x.id === session.selected) ? session.selected : null;
+  render();
+  if (state.selected) {
+    const item = state.items.find(x => x.id === state.selected);
+    if (item) {
+      renderReader(item);
+      document.body.classList.add("reader-open");
+      $("#reader").scrollTop = Math.max(0, Number(session.readerScroll) || 0);
+    }
+  }
+  $(".list-pane").scrollTop = Math.max(0, Number(session.listScroll) || 0);
+  saveAppSession();
+  return true;
+}
 function render() {
   if (!state.selected) {
     document.body.classList.remove("reader-open");
@@ -3051,6 +3114,7 @@ function render() {
   const tl = $("#tagList");
   if (tl) tl.innerHTML = state.tags.map(t => `<option value="${esc(t)}">`).join("");
   if (!state.selected) $("#reader").innerHTML = '<div class="reader-empty">' + icon("rss", "big") + '<h2>Nothing open yet</h2><p>Pick an article from the list to read it here.</p><small>Tip: press ? any time to see keyboard shortcuts.</small></div>';
+  saveAppSession();
 }
 
 /* ---------- folders & tags ---------- */
@@ -4686,6 +4750,9 @@ function bindApplicationChrome() {
   });
   window.addEventListener("online",renderActivityCenter);
   window.addEventListener("offline",renderActivityCenter);
+  $(".list-pane").addEventListener("scroll",scheduleAppSessionSave,{passive:true});
+  $("#reader").addEventListener("scroll",scheduleAppSessionSave,{passive:true});
+  window.addEventListener("pagehide",saveAppSession);
   updatePanePresetSelect();
   updateFocusButton();
 }
@@ -5526,7 +5593,7 @@ async function init() {
       toast("Could not load your articles.");
     }
   }
-  render();
+  if (!restoreAppSession()) render();
   if (!opened) {
     toast("Could not open browser storage. Your articles are unavailable.", { label: "Retry", fn: () => location.reload() });
   } else {
