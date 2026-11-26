@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.10.1] - 2026-11-26
+
+### Added
+- Restore the last library view, search, selected article, and scroll positions after a reload or PWA relaunch.
+- Show unread, saved, and queued article totals in the activity center.
+- Add browser regression coverage for session and reader-scroll restoration.
+
+## [1.10.0] - 2026-11-26
+
+### Added
+- Add an application toolbar, searchable command palette, activity center, and desktop pane presets.
+- Add mobile bottom navigation and a More sheet for secondary views and common actions.
+- Add focus reading mode, touch article navigation, swipe actions, and multi-select bulk operations.
+- Add continuous integration for JavaScript syntax, unit tests, and Playwright browser tests.
+- Automate versioned GitHub releases.
+
 ## [1.9.19] - 2026-11-25
 
 ### Fixed
