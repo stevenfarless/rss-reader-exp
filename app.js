@@ -871,7 +871,6 @@ function applyPaneWidths() {
   if (ss) ss.setAttribute("aria-valuenow", String(side));
   if (sl) sl.setAttribute("aria-valuenow", String(list));
   positionSplitters();
-  if (typeof updatePanePresetSelect === "function") updatePanePresetSelect();
 }
 /* Place the splitter handles on the panes' right edges. Skipped on
    mobile, where the sidebar is a drawer and the splitters are hidden. */
@@ -4604,17 +4603,64 @@ const COMMANDS = [
   ["mark-read","Mark visible articles read","Articles",()=>markVisibleRead()],
   ["export","Export subscriptions (OPML)","Data",()=>exportOPML()]
 ];
+const QUICK_SETTINGS = [
+  { key:"theme", label:"Appearance", choices:[["dark","Dark"],["light","Light"],["oled","OLED Black"],["white","Pure White"],["system","System"]] },
+  { key:"width", label:"Reading width", choices:[["narrow","Narrow"],["comfortable","Comfortable"],["wide","Wide"]] },
+  { key:"size", label:"Text size", choices:[["small","Small"],["normal","Normal"],["large","Large"]] },
+  { key:"readerFont", label:"Reader font", choices:[["serif","Serif"],["sans","Sans-serif"],["nunito","Nunito"],["ubuntu","Ubuntu"]] },
+  { key:"lineHeight", label:"Line height", choices:[["compact","Compact"],["comfortable","Comfortable"],["roomy","Roomy"]] },
+  { key:"progressPosition", label:"Reading progress bar", choices:[["bottom","Bottom"],["top","Top"]] },
+  { key:"mobileReaderBar", label:"Mobile article actions", choices:[["bottom","Bottom bar"],["top","Top bar"]] },
+  { key:"shortcutPreset", label:"Keyboard shortcuts", choices:[["inoreader","Inoreader"],["feedly","Feedly"],["newsblur","NewsBlur"],["feedbin","Feedbin"],["freshrss","FreshRSS"],["miniflux","Miniflux"],["oldreader","The Old Reader"],["bazqux","BazQux"],["commafeed","CommaFeed"],["vim","Vim"]] },
+  { key:"cardExcerpt", label:"Preview text", choices:[["none","None"],["short","Short"],["full","Full"]] },
+  { key:"globalRefreshMinutes", label:"Default refresh interval", choices:[[15,"15 minutes"],[30,"30 minutes"],[60,"1 hour"],[180,"3 hours"],[360,"6 hours"],[720,"12 hours"],[1440,"24 hours"]] },
+  { key:"cardImage", label:"Show thumbnails", choices:[[true,"On"],[false,"Off"]] },
+  { key:"hideDuplicates", label:"Hide duplicate articles", choices:[[true,"On"],[false,"Off"]] },
+  { key:"shortcutCoaching", label:"Shortcut coaching", choices:[[true,"On"],[false,"Off"]] },
+  { key:"shortcutBar", label:"Keyboard shortcut bar", choices:[[true,"On"],[false,"Off"]] }
+];
+function quickSettingCommands() {
+  return QUICK_SETTINGS.flatMap(setting => {
+    const defaults = { cardImage:true, hideDuplicates:true, shortcutBar:true, globalRefreshMinutes:30 };
+    const current = state.settings[setting.key] ?? defaults[setting.key];
+    const currentLabel = setting.choices.find(([value]) => value === current)?.[1] || String(current);
+    return setting.choices.map(([value,label]) => [
+      `setting-${setting.key}-${String(value)}`,
+      `${setting.label}: ${label}`,
+      `Quick settings · Current: ${currentLabel}`,
+      () => setQuickSetting(setting.key,value,setting.label,label)
+    ]);
+  });
+}
+function setQuickSetting(key,value,label,valueLabel) {
+  const setting = QUICK_SETTINGS.find(item => item.key === key);
+  if (!setting || !setting.choices.some(([choice]) => choice === value)) return;
+  state.settings[key] = value;
+  if (key === "shortcutCoaching") state.settings.shortcutCoachingExplicit = true;
+  local(S,state.settings);
+  applySettings();
+  renderList();
+  if (state.selected) {
+    const item = selectedItem();
+    if (item) {
+      const scrollTop = $("#reader").scrollTop;
+      renderReader(item);
+      $("#reader").scrollTop = scrollTop;
+    }
+  }
+  toast(`${label} set to ${valueLabel}.`);
+}
 let commandActiveIndex = 0;
 function renderCommandResults() {
   const q = ($("#commandInput")?.value || "").trim().toLowerCase();
   const feedCommands = state.feeds.map(f => [`feed-${f.id}`, `Open feed: ${feedDisplayTitle(f)}`, "Feeds", () => goFeedById(f.id)]);
   const articleCommands = q.length >= 2 ? state.items.filter(x => (x.title || "").toLowerCase().includes(q)).slice(0,8).map(x => [`article-${x.id}`, x.title, feedTitleFor(x), () => openItem(x.id)]) : [];
-  const matches = [...COMMANDS, ...feedCommands, ...articleCommands].filter(c => (c[1] + " " + c[2]).toLowerCase().includes(q));
+  const matches = [...COMMANDS, ...quickSettingCommands(), ...feedCommands, ...articleCommands].filter(c => (c[1] + " " + c[2]).toLowerCase().includes(q));
   commandActiveIndex = Math.min(commandActiveIndex, Math.max(0, matches.length - 1));
   $("#commandResults").innerHTML = matches.length ? matches.map((c,i)=>`<button type="button" role="option" aria-selected="${i===commandActiveIndex}" data-command-id="${c[0]}"><span><strong>${esc(c[1])}</strong><small>${esc(c[2])}</small></span><kbd>${i===commandActiveIndex ? "↵" : ""}</kbd></button>`).join("") : '<p class="muted">No matching commands.</p>';
 }
 function runCommand(id) {
-  let command = COMMANDS.find(c => c[0] === id);
+  let command = [...COMMANDS, ...quickSettingCommands()].find(c => c[0] === id);
   if (!command && id.startsWith("feed-")) {
     const feed = state.feeds.find(f => "feed-" + f.id === id);
     if (feed) command = [id, feedDisplayTitle(feed), "Feeds", () => goFeedById(feed.id)];
@@ -4635,23 +4681,6 @@ function showCommandPalette() {
   renderCommandResults();
   dialog.showModal();
   $("#commandInput").focus();
-}
-const PANE_PRESETS = {standard:[250,400],compact:[205,320],reading:[190,320]};
-function applyPanePreset(name) {
-  if (name === "custom") return;
-  const sizes = PANE_PRESETS[name];
-  if (!sizes) return;
-  state.settings.sidebarWidth = sizes[0];
-  state.settings.listWidth = sizes[1];
-  local(S,state.settings);
-  applyPaneWidths();
-  const select = $("#panePreset"); if (select) select.value = name;
-}
-function updatePanePresetSelect() {
-  const select = $("#panePreset");
-  if (!select) return;
-  const found = Object.entries(PANE_PRESETS).find(([,sizes]) => sizes[0] === Number(state.settings.sidebarWidth) && sizes[1] === Number(state.settings.listWidth));
-  select.value = found ? found[0] : "custom";
 }
 function updateFocusButton() {
   const button = $("#appFocus");
@@ -4678,7 +4707,6 @@ function bindApplicationChrome() {
   $("#appRefresh").onclick = () => refresh();
   $("#activityButton").onclick = showActivityCenter;
   $("#appFocus").onclick = toggleFocusMode;
-  $("#panePreset").onchange = e => applyPanePreset(e.target.value);
   document.querySelectorAll("[data-rail-commands]").forEach(button => button.addEventListener("click", showCommandPalette));
   document.querySelectorAll("[data-rail-activity]").forEach(button => button.addEventListener("click", showActivityCenter));
   document.querySelectorAll("[data-rail-focus]").forEach(button => button.addEventListener("click", toggleFocusMode));
@@ -4762,7 +4790,6 @@ function bindApplicationChrome() {
   $(".list-pane").addEventListener("scroll",scheduleAppSessionSave,{passive:true});
   $("#reader").addEventListener("scroll",scheduleAppSessionSave,{passive:true});
   window.addEventListener("pagehide",saveAppSession);
-  updatePanePresetSelect();
   updateFocusButton();
 }
 
