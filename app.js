@@ -82,7 +82,7 @@ function toolbarButtonHTML(key, x, ctx) {
   const fullTextLoading = loadingFullTextIds.has(x.id);
   const fullTextActive = fullTextState(x).showingFull;
   switch (key) {
-    case "back": return `<button data-reader="back" class="reader-btn reader-back" title="Back to list" aria-label="Back to list"><span class="back-arrow" aria-hidden="true">←</span><span class="back-label">Back</span></button>`;
+    case "back": return `<button data-reader="back" class="reader-btn reader-back" title="Back to list" aria-label="Back to list">‹</button>`;
     case "save": return `<button data-reader="save" class="reader-btn" title="Save (s)" aria-label="${x.saved ? "Unsave article" : "Save article"}" aria-pressed="${x.saved}">${icon(x.saved ? "star-filled" : "star")}</button>`;
     case "tags": return `<button data-reader="tags" class="reader-btn" title="Add tags (T)" aria-label="Add tags" aria-expanded="${tagsExpandedId === x.id}">${icon("tag")}</button>`;
     case "read": return `<button data-reader="read" class="reader-btn" title="${x.read ? "Mark unread (m)" : "Mark read (m)"}" aria-label="${x.read ? "Mark unread" : "Mark read"}">${x.read ? "○" : "●"}</button>`;
