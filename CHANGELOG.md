@@ -1,3 +1,9 @@
+## 1.10.5
+
+- Hide per-article selection controls until Select is activated.
+- Add an explicit Select/Done control to enter and exit bulk-selection mode.
+- Keep bulk actions hidden until at least one article is selected; exiting selection mode clears the current selection.
+
 ## 1.10.4
 
 - Automatically collapse the desktop sidebar into its icon rail when its configured width drops below 230px.
