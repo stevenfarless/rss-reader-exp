@@ -6,7 +6,7 @@ test("desktop sidebar controls open commands and activity without a top toolbar"
   await expect(page.locator("#appToolbar")).toHaveCount(0);
   await expect(page.locator("#sidebar")).toBeVisible();
   await expect(page.locator("#commandButton")).toBeVisible();
-  await expect(page.locator("#panePreset")).toBeVisible();
+  await expect(page.locator("#panePreset")).toHaveCount(0);
 
   await page.locator("#commandButton").click();
   await expect(page.locator("#commandDialog")).toBeVisible();
@@ -18,10 +18,14 @@ test("desktop sidebar controls open commands and activity without a top toolbar"
   await page.keyboard.press("Control+k");
   await expect(page.locator("#commandDialog")).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.locator("#panePreset").selectOption("compact");
-  await expect(page.locator("html")).toHaveCSS("--side-w", "205px");
-  await page.reload();
-  await expect(page.locator("#panePreset")).toHaveValue("compact");
+  await page.locator("#commandButton").click();
+  await page.locator("#commandInput").fill("text size: large");
+  await page.getByRole("option", { name: /Text size: Large/ }).click();
+  await expect(page.locator("#toast")).toContainText("Text size set to Large");
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("rss-reader.settings.v1")).size)).toBe("large");
+  await page.locator("#settings").click();
+  await expect(page.locator("#sizeSelect")).toHaveValue("large");
+  await page.locator("#settingsDialog .x").click();
 
   await page.locator("#activityButton").click();
   await expect(page.locator("#activityDialog")).toBeVisible();
