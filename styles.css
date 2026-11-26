@@ -679,14 +679,8 @@ body.focus-mode .reader-content{max-width:850px}
  body.sidebar-collapsed .sidebar-tools-section .sidebar-search{display:none!important}
 }
 
-
-/* Mobile reader swipe navigation: keep vertical scrolling native while
-   the reader content follows an intentional rightward swipe. */
+/* Swipe navigation must not transform the reader-content ancestor:
+   reader actions are fixed-position descendants on mobile. */
 @media(max-width:820px){
  #reader{touch-action:pan-y;overscroll-behavior-x:contain}
- #reader .reader-content{transform:translate3d(0,0,0);transition:transform .18s ease-out}
- #reader.is-swipe-tracking .reader-content{transform:translate3d(var(--reader-swipe-x,0px),0,0);transition:none}
-}
-@media(prefers-reduced-motion:reduce){
- #reader .reader-content{transition:none}
 }
