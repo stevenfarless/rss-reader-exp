@@ -38,7 +38,7 @@ const PROXY_TIMEOUT_MS = 30000;
 const MAX_ITEMS_PER_FEED = 200;
 /* The version shown in Settings and in the update check (#144). Bump
    it with every release, alongside package.json and the SW cache. */
-const APP_VERSION = "1.10.4";
+const APP_VERSION = "1.10.5";
 
 const state = {
   feeds: [], items: [], highlights: [], view: "all", feed: null, folder: null, filter: "all",
@@ -2168,7 +2168,7 @@ function renderList() {
     const thumb = feedCardImage(srcFeed) && x.image ? `<img class="article-thumb" src="${esc(x.image)}" alt="" loading="lazy" onerror="this.remove()">` : "";
     const rt = readingTimeText(x);
     const snoozeNote = state.view === "snoozed" && x.snoozedUntil ? ` · <span>Snoozed until ${esc(fmtDateTime(new Date(x.snoozedUntil)))}</span>` : "";
-    return `<article class="article ${x.read ? "" : "unread"} ${x.id === state.selected ? "selected" : ""} ${selectedArticleIds.has(x.id) ? "multi-selected" : ""}" data-item="${esc(x.id)}" tabindex="0" role="button" aria-label="Open: ${esc(x.title)}"><button type="button" class="article-select" data-select-item="${esc(x.id)}" aria-label="Select: ${esc(x.title)}" aria-pressed="${selectedArticleIds.has(x.id)}">${selectedArticleIds.has(x.id) ? "✓" : ""}</button>${thumb}<div class="article-main"><h2>${esc(x.title)}</h2><div class="article-source">${fav ? `<img class="card-favicon" src="${esc(fav)}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span>${esc(feedTitle)}</span></div>${excerpt}<div class="article-bottom"><span>${showAuthor ? `${esc(x.author)} · ` : ""}<time datetime="${esc(d ? d.toISOString() : "")}" title="${esc(d ? d.toLocaleDateString() : "")}">${esc(relDate(d))}</time>${rt ? ` · <span>${rt}</span>` : ""}${snoozeNote}</span><span class="article-actions"><button data-action="read" data-id="${esc(x.id)}" title="Toggle read (m)" aria-label="${x.read ? "Mark unread" : "Mark read"}: ${esc(x.title)}" aria-pressed="${x.read}">${x.read ? "○" : "●"}</button><button data-action="save" data-id="${esc(x.id)}" title="Save (s)" aria-label="${x.saved ? "Unsave" : "Save"}: ${esc(x.title)}" aria-pressed="${x.saved}">${icon(x.saved ? "star-filled" : "star")}</button><button data-action="share" data-id="${esc(x.id)}" title="Share article" aria-label="Share: ${esc(x.title)}">${icon("share")}</button><button data-action="queue" data-id="${esc(x.id)}" title="${x.queued ? "Remove from queue" : "Add to queue"}" aria-label="${x.queued ? "Remove from queue" : "Add to queue"}: ${esc(x.title)}" aria-pressed="${!!x.queued}">${x.queued ? "☷" : "＋"}</button>${state.view === "queue" ? `<button class="text-btn" data-action="queue-up" data-id="${esc(x.id)}" title="Move earlier">↑</button><button class="text-btn" data-action="queue-down" data-id="${esc(x.id)}" title="Move later">↓</button>` : ""}${state.view === "snoozed" ? `<button class="text-btn" data-action="unsnooze" data-id="${esc(x.id)}" title="Bring back now" aria-label="Unsnooze: ${esc(x.title)}">Unsnooze</button>` : ""}</span></div></div></article>`;
+    return `<article class="article ${x.read ? "" : "unread"} ${x.id === state.selected ? "selected" : ""} ${selectedArticleIds.has(x.id) ? "multi-selected" : ""}" data-item="${esc(x.id)}" tabindex="0" role="button" aria-label="Open: ${esc(x.title)}"><button type="button" class="article-select" data-select-item="${esc(x.id)}" aria-label="Select: ${esc(x.title)}" aria-pressed="${selectedArticleIds.has(x.id)}" ${articleSelectionMode ? "" : "hidden"}>${selectedArticleIds.has(x.id) ? "✓" : ""}</button>${thumb}<div class="article-main"><h2>${esc(x.title)}</h2><div class="article-source">${fav ? `<img class="card-favicon" src="${esc(fav)}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span>${esc(feedTitle)}</span></div>${excerpt}<div class="article-bottom"><span>${showAuthor ? `${esc(x.author)} · ` : ""}<time datetime="${esc(d ? d.toISOString() : "")}" title="${esc(d ? d.toLocaleDateString() : "")}">${esc(relDate(d))}</time>${rt ? ` · <span>${rt}</span>` : ""}${snoozeNote}</span><span class="article-actions"><button data-action="read" data-id="${esc(x.id)}" title="Toggle read (m)" aria-label="${x.read ? "Mark unread" : "Mark read"}: ${esc(x.title)}" aria-pressed="${x.read}">${x.read ? "○" : "●"}</button><button data-action="save" data-id="${esc(x.id)}" title="Save (s)" aria-label="${x.saved ? "Unsave" : "Save"}: ${esc(x.title)}" aria-pressed="${x.saved}">${icon(x.saved ? "star-filled" : "star")}</button><button data-action="share" data-id="${esc(x.id)}" title="Share article" aria-label="Share: ${esc(x.title)}">${icon("share")}</button><button data-action="queue" data-id="${esc(x.id)}" title="${x.queued ? "Remove from queue" : "Add to queue"}" aria-label="${x.queued ? "Remove from queue" : "Add to queue"}: ${esc(x.title)}" aria-pressed="${!!x.queued}">${x.queued ? "☷" : "＋"}</button>${state.view === "queue" ? `<button class="text-btn" data-action="queue-up" data-id="${esc(x.id)}" title="Move earlier">↑</button><button class="text-btn" data-action="queue-down" data-id="${esc(x.id)}" title="Move later">↓</button>` : ""}${state.view === "snoozed" ? `<button class="text-btn" data-action="unsnooze" data-id="${esc(x.id)}" title="Bring back now" aria-label="Unsnooze: ${esc(x.title)}">Unsnooze</button>` : ""}</span></div></div></article>`;
   }).join("") : (state.query || state.filter !== "all" ? `<div class="empty"><div class="empty-mark">R</div><h2>Nothing to show.</h2><p>No articles match${state.query ? " &quot;" + esc(state.query) + "&quot;" : ""}.</p><button class="primary" id="emptyClear">Clear search</button></div>` : '<div class="empty"><div class="empty-mark">R</div><h2>Nothing to show.</h2><p>Add a feed or change the current filter.</p><button class="primary" id="emptyAdd">Add a feed</button></div>');
   const b = $("#emptyAdd");
   if (b) b.onclick = showFeed;
@@ -4492,11 +4492,13 @@ async function markAboveBelow(which) {
 
 /* ---------- application shell and command system ---------- */
 const selectedArticleIds = new Set();
+let articleSelectionMode = false;
 let lastSelectedArticleId = null;
 let swipeHandled = false;
 let longPressTimer = null;
 let longPressTriggered = false;
 function clearArticleSelection() {
+  articleSelectionMode = false;
   selectedArticleIds.clear();
   lastSelectedArticleId = null;
   renderSelectionToolbar();
@@ -4509,8 +4511,16 @@ function renderSelectionToolbar() {
   const count = selectedArticleIds.size;
   bar.hidden = count === 0;
   $("#selectionCount").textContent = count + " selected";
+  const selectButton = $("#selectArticlesBtn");
+  if (selectButton) {
+    selectButton.hidden = visibleIds.size === 0;
+    selectButton.textContent = articleSelectionMode ? "Done" : "Select";
+    selectButton.setAttribute("aria-pressed", String(articleSelectionMode));
+    selectButton.setAttribute("aria-label", articleSelectionMode ? "Finish selecting articles" : "Select articles");
+  }
 }
 function toggleArticleSelection(itemId, range = false) {
+  articleSelectionMode = true;
   const items = visible();
   const targetIndex = items.findIndex(x => x.id === itemId);
   if (targetIndex < 0) return;
@@ -4965,7 +4975,7 @@ function bind() {
     const row = e.target.closest("[data-item]");
     if (row) {
       if (swipeHandled) { swipeHandled = false; return; }
-      if (selectedArticleIds.size || e.shiftKey) { toggleArticleSelection(row.dataset.item, e.shiftKey); return; }
+      if (articleSelectionMode || e.shiftKey) { toggleArticleSelection(row.dataset.item, e.shiftKey); return; }
       openItem(row.dataset.item); return;
     }
   });
@@ -5079,6 +5089,11 @@ function bind() {
     else if (e.target.id === "orgEditInput") { e.preventDefault(); doRename(e.target.value); }
   });
   $("#refresh").onclick = refresh;
+  $("#selectArticlesBtn").onclick = () => {
+    if (articleSelectionMode) clearArticleSelection();
+    else articleSelectionMode = true;
+    renderList();
+  };
   $("#removeQueue").onclick = removeVisibleFromQueue;
   bindSplitters();
   $("#reader").addEventListener("scroll", updateReadProgress, { passive: true });
