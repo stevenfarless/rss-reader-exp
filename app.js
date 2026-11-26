@@ -4791,6 +4791,8 @@ function bind() {
     if (noteEdit) { const x2 = selectedItem(); if (x2) showArticleNoteDialog(x2); return; }
     const noteDel = e.target.closest("[data-note-delete]");
     if (noteDel) { const x2 = selectedItem(); if (x2) { setArticleNote(x2.id, ""); renderReader(x2); toast("Note deleted."); } return; }
+    const selectButton = e.target.closest("[data-select-item]");
+    if (selectButton) { e.preventDefault(); toggleArticleSelection(selectButton.dataset.selectItem, e.shiftKey); return; }
     const row = e.target.closest("[data-item]");
     if (row) {
       if (swipeHandled) { swipeHandled = false; return; }
@@ -4800,7 +4802,7 @@ function bind() {
   });
   document.addEventListener("keydown", e => {
     const selectButton = e.target.closest?.("[data-select-item]");
-    if (selectButton) { e.preventDefault(); toggleArticleSelection(selectButton.dataset.selectItem, e.shiftKey); return; }
+    if (selectButton && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleArticleSelection(selectButton.dataset.selectItem, e.shiftKey); return; }
     const row = e.target.closest?.("[data-item]");
     // Only when the row itself is focused: an inner button (read/save)
     // must keep its own Enter/Space behavior.
