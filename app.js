@@ -37,7 +37,7 @@ const PROXY_TIMEOUT_MS = 30000;
 const MAX_ITEMS_PER_FEED = 200;
 /* The version shown in Settings and in the update check (#144). Bump
    it with every release, alongside package.json and the SW cache. */
-const APP_VERSION = "1.9.21";
+const APP_VERSION = "1.10.0";
 
 const state = {
   feeds: [], items: [], highlights: [], view: "all", feed: null, folder: null, filter: "all",
@@ -1881,6 +1881,7 @@ function saveCollapsedFolders() { try { localStorage.setItem(COLLAPSED_FOLDERS_K
 function fmtCount(n) { return n > 999 ? "999+" : String(n); }
 
 function renderNav() {
+  updateActivityIndicator();
   const shown = countableItems();
   $("#allCount").textContent = fmtCount(shown.length);
   $("#unreadCount").textContent = fmtCount(shown.filter(x => !x.read).length);
@@ -2110,8 +2111,10 @@ async function removeVisibleFromQueue() {
 }
 function renderList() {
   const a = visible();
+  renderSelectionToolbar();
   const titles = { all: "All articles", unread: "Unread", queue: "Reading queue", saved: "Saved", snoozed: "Snoozed", highlights: "Highlights", feed: state.feeds.find(f => f.id === state.feed)?.title || "Feed", folder: state.folder || "Folder", savedSearch: state.savedSearches.find(s => s.id === state.savedSearch)?.name || "Saved search", tag: state.tag ? "Tag: " + state.tag : "Tag" };
   $("#heading").textContent = titles[state.view];
+  const appbarTitle = $("#appbarTitle"); if (appbarTitle) appbarTitle.textContent = titles[state.view];
   $("#removeQueue").hidden = state.view !== "queue";
   $("#mobileTitle").textContent = titles[state.view];
   // The Highlights view (#116) lists the highlights themselves, newest
@@ -2157,7 +2160,7 @@ function renderList() {
     const thumb = feedCardImage(srcFeed) && x.image ? `<img class="article-thumb" src="${esc(x.image)}" alt="" loading="lazy" onerror="this.remove()">` : "";
     const rt = readingTimeText(x);
     const snoozeNote = state.view === "snoozed" && x.snoozedUntil ? ` · <span>Snoozed until ${esc(fmtDateTime(new Date(x.snoozedUntil)))}</span>` : "";
-    return `<article class="article ${x.read ? "" : "unread"} ${x.id === state.selected ? "selected" : ""}" data-item="${esc(x.id)}" tabindex="0" role="button" aria-label="Open: ${esc(x.title)}">${thumb}<div class="article-main"><h2>${esc(x.title)}</h2><div class="article-source">${fav ? `<img class="card-favicon" src="${esc(fav)}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span>${esc(feedTitle)}</span></div>${excerpt}<div class="article-bottom"><span>${showAuthor ? `${esc(x.author)} · ` : ""}<time datetime="${esc(d ? d.toISOString() : "")}" title="${esc(d ? d.toLocaleDateString() : "")}">${esc(relDate(d))}</time>${rt ? ` · <span>${rt}</span>` : ""}${snoozeNote}</span><span class="article-actions"><button data-action="read" data-id="${esc(x.id)}" title="Toggle read (m)" aria-label="${x.read ? "Mark unread" : "Mark read"}: ${esc(x.title)}" aria-pressed="${x.read}">${x.read ? "○" : "●"}</button><button data-action="save" data-id="${esc(x.id)}" title="Save (s)" aria-label="${x.saved ? "Unsave" : "Save"}: ${esc(x.title)}" aria-pressed="${x.saved}">${icon(x.saved ? "star-filled" : "star")}</button><button data-action="share" data-id="${esc(x.id)}" title="Share article" aria-label="Share: ${esc(x.title)}">${icon("share")}</button><button data-action="queue" data-id="${esc(x.id)}" title="${x.queued ? "Remove from queue" : "Add to queue"}" aria-label="${x.queued ? "Remove from queue" : "Add to queue"}: ${esc(x.title)}" aria-pressed="${!!x.queued}">${x.queued ? "☷" : "＋"}</button>${state.view === "queue" ? `<button class="text-btn" data-action="queue-up" data-id="${esc(x.id)}" title="Move earlier">↑</button><button class="text-btn" data-action="queue-down" data-id="${esc(x.id)}" title="Move later">↓</button>` : ""}${state.view === "snoozed" ? `<button class="text-btn" data-action="unsnooze" data-id="${esc(x.id)}" title="Bring back now" aria-label="Unsnooze: ${esc(x.title)}">Unsnooze</button>` : ""}</span></div></div></article>`;
+    return `<article class="article ${x.read ? "" : "unread"} ${x.id === state.selected ? "selected" : ""} ${selectedArticleIds.has(x.id) ? "multi-selected" : ""}" data-item="${esc(x.id)}" tabindex="0" role="button" aria-label="Open: ${esc(x.title)}"><button type="button" class="article-select" data-select-item="${esc(x.id)}" aria-label="Select: ${esc(x.title)}" aria-pressed="${selectedArticleIds.has(x.id)}">${selectedArticleIds.has(x.id) ? "✓" : ""}</button>${thumb}<div class="article-main"><h2>${esc(x.title)}</h2><div class="article-source">${fav ? `<img class="card-favicon" src="${esc(fav)}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span>${esc(feedTitle)}</span></div>${excerpt}<div class="article-bottom"><span>${showAuthor ? `${esc(x.author)} · ` : ""}<time datetime="${esc(d ? d.toISOString() : "")}" title="${esc(d ? d.toLocaleDateString() : "")}">${esc(relDate(d))}</time>${rt ? ` · <span>${rt}</span>` : ""}${snoozeNote}</span><span class="article-actions"><button data-action="read" data-id="${esc(x.id)}" title="Toggle read (m)" aria-label="${x.read ? "Mark unread" : "Mark read"}: ${esc(x.title)}" aria-pressed="${x.read}">${x.read ? "○" : "●"}</button><button data-action="save" data-id="${esc(x.id)}" title="Save (s)" aria-label="${x.saved ? "Unsave" : "Save"}: ${esc(x.title)}" aria-pressed="${x.saved}">${icon(x.saved ? "star-filled" : "star")}</button><button data-action="share" data-id="${esc(x.id)}" title="Share article" aria-label="Share: ${esc(x.title)}">${icon("share")}</button><button data-action="queue" data-id="${esc(x.id)}" title="${x.queued ? "Remove from queue" : "Add to queue"}" aria-label="${x.queued ? "Remove from queue" : "Add to queue"}: ${esc(x.title)}" aria-pressed="${!!x.queued}">${x.queued ? "☷" : "＋"}</button>${state.view === "queue" ? `<button class="text-btn" data-action="queue-up" data-id="${esc(x.id)}" title="Move earlier">↑</button><button class="text-btn" data-action="queue-down" data-id="${esc(x.id)}" title="Move later">↓</button>` : ""}${state.view === "snoozed" ? `<button class="text-btn" data-action="unsnooze" data-id="${esc(x.id)}" title="Bring back now" aria-label="Unsnooze: ${esc(x.title)}">Unsnooze</button>` : ""}</span></div></div></article>`;
   }).join("") : (state.query || state.filter !== "all" ? `<div class="empty"><div class="empty-mark">R</div><h2>Nothing to show.</h2><p>No articles match${state.query ? " &quot;" + esc(state.query) + "&quot;" : ""}.</p><button class="primary" id="emptyClear">Clear search</button></div>` : '<div class="empty"><div class="empty-mark">R</div><h2>Nothing to show.</h2><p>Add a feed or change the current filter.</p><button class="primary" id="emptyAdd">Add a feed</button></div>');
   const b = $("#emptyAdd");
   if (b) b.onclick = showFeed;
@@ -2644,6 +2647,7 @@ function renderReader(x) {
   // Highlights (#116): mark the saved passages back into the text.
   applyHighlights(bodyEl, highlightsFor(x.id));
   $("#reader").classList.add("open");
+  document.body.classList.add("reader-open");
   // A fresh article starts at the top; a re-render of the same article
   // (a save/read toggle, a tag change) keeps its scroll position.
   $("#reader").dataset.openId = x.id;
@@ -2975,6 +2979,7 @@ function openHighlight(hlId) {
   requestAnimationFrame(() => scrollToHighlight(hlId));
 }
 function openItem(itemId) {
+  if (selectedArticleIds.size) { toggleArticleSelection(itemId); return; }
   const x = state.items.find(i => i.id === itemId);
   if (!x) return;
   const prevId = state.selected;
@@ -3019,6 +3024,8 @@ function openItem(itemId) {
   }
 }
 function closeReader() {
+  document.body.classList.remove("focus-mode", "reader-open");
+  updateFocusButton();
   stopTTS();
   const wasOpen = $("#reader").classList.contains("open") || !!state.selected;
   $("#reader").classList.remove("open");
@@ -3041,6 +3048,10 @@ function render() {
 
 /* ---------- folders & tags ---------- */
 function goTag(tag) {
+  clearArticleSelection();
+  $("#moreDialog")?.close();
+  document.body.classList.remove("focus-mode", "reader-open");
+  updateFocusButton();
   stopTTS();
   state.view = "tag"; state.tag = tag; state.feed = null; state.folder = null; state.savedSearch = null; state.selected = null;
   $("#reader").classList.remove("open");
@@ -4302,6 +4313,10 @@ function moveUnread(dir) {
   openItem(a[n].id);
 }
 function goView(view) {
+  clearArticleSelection();
+  $("#moreDialog")?.close();
+  document.body.classList.remove("focus-mode", "reader-open");
+  updateFocusButton();
   stopTTS();
   state.view = view; state.feed = null; state.folder = null; state.tag = null; state.savedSearch = null; state.selected = null;
   $("#reader").classList.remove("open");
@@ -4310,6 +4325,10 @@ function goView(view) {
 /* Open a folder as one merged list (#118): every feed in the folder,
    newest first, with the same mark-read controls as the other views. */
 function goFolder(name) {
+  clearArticleSelection();
+  $("#moreDialog")?.close();
+  document.body.classList.remove("focus-mode", "reader-open");
+  updateFocusButton();
   stopTTS();
   state.view = "folder"; state.folder = name; state.feed = null; state.tag = null; state.savedSearch = null; state.selected = null;
   $("#reader").classList.remove("open");
@@ -4317,6 +4336,10 @@ function goFolder(name) {
 }
 /* Open a saved search (#108): the stored filter, run over the library. */
 function goSavedSearch(id) {
+  clearArticleSelection();
+  $("#moreDialog")?.close();
+  document.body.classList.remove("focus-mode", "reader-open");
+  updateFocusButton();
   stopTTS();
   state.view = "savedSearch"; state.savedSearch = id; state.feed = null; state.folder = null; state.tag = null; state.selected = null;
   $("#reader").classList.remove("open");
@@ -4383,6 +4406,220 @@ async function markAboveBelow(which) {
     await putMany(targets);
     render();
   } });
+}
+
+
+/* ---------- application shell and command system ---------- */
+const selectedArticleIds = new Set();
+let lastSelectedArticleId = null;
+let swipeHandled = false;
+function clearArticleSelection() {
+  selectedArticleIds.clear();
+  lastSelectedArticleId = null;
+  renderSelectionToolbar();
+}
+function renderSelectionToolbar() {
+  const bar = $("#selectionToolbar");
+  if (!bar) return;
+  const count = selectedArticleIds.size;
+  bar.hidden = count === 0;
+  $("#selectionCount").textContent = count + " selected";
+}
+function toggleArticleSelection(itemId, range = false) {
+  const items = visible();
+  const targetIndex = items.findIndex(x => x.id === itemId);
+  if (targetIndex < 0) return;
+  const anchorIndex = items.findIndex(x => x.id === lastSelectedArticleId);
+  if (range && anchorIndex >= 0) {
+    const start = Math.min(anchorIndex, targetIndex), end = Math.max(anchorIndex, targetIndex);
+    for (const item of items.slice(start, end + 1)) selectedArticleIds.add(item.id);
+  } else if (selectedArticleIds.has(itemId)) selectedArticleIds.delete(itemId);
+  else selectedArticleIds.add(itemId);
+  lastSelectedArticleId = itemId;
+  renderList();
+}
+async function runBulkAction(action) {
+  const targets = state.items.filter(x => selectedArticleIds.has(x.id));
+  if (!targets.length) return;
+  if (action === "clear") { clearArticleSelection(); renderList(); return; }
+  if (action === "read") {
+    const changed = targets.filter(x => !x.read);
+    for (const x of changed) { x.read = true; x.readAt = Date.now(); }
+    await putMany(changed);
+    clearArticleSelection(); render();
+    toast(`Marked ${changed.length} article${changed.length === 1 ? "" : "s"} read.`, {label:"Undo",fn:async()=>{for(const x of changed){x.read=false;x.readAt=null;}await putMany(changed);render();}});
+    return;
+  }
+  if (action === "save") for (const x of targets) x.saved = true;
+  if (action === "queue") for (const x of targets) { x.queued = true; x.queueOrder ||= Date.now(); }
+  await putMany(targets);
+  clearArticleSelection(); render();
+  toast(action === "save" ? `Saved ${targets.length} article${targets.length === 1 ? "" : "s"}.` : `Added ${targets.length} article${targets.length === 1 ? "" : "s"} to the queue.`);
+}
+function updateActivityIndicator() {
+  const count = state.feeds.filter(f => !!f.error).length;
+  const badge = $("#activityCount");
+  if (badge) { badge.textContent = count > 99 ? "99+" : String(count); badge.hidden = count === 0; }
+  const button = $("#activityButton");
+  if (button) {
+    button.classList.toggle("has-errors", count > 0);
+    button.setAttribute("aria-label", count ? `Activity and feed status, ${count} feed errors` : "Activity and feed status");
+  }
+}
+function renderActivityCenter() {
+  const root = $("#activityContent");
+  if (!root) return;
+  const errors = state.feeds.filter(f => f.error);
+  const refreshing = !!$("#refresh")?.disabled;
+  const online = navigator.onLine !== false;
+  const last = state.lastRefresh ? new Date(state.lastRefresh).toLocaleString() : "No refresh recorded in this browser";
+  root.innerHTML = `<div class="activity-status"><span class="status-indicator ${online ? "online" : "offline"}"></span><div><strong>${online ? "Online" : "Offline"}</strong><p>${online ? "Network connection is available." : "Check your connection. Feed refreshes may fail until you reconnect."}</p></div></div><div class="activity-status"><span class="status-indicator ${refreshing ? "busy" : "idle"}"></span><div><strong>${refreshing ? "Refreshing feeds" : "Refresh idle"}</strong><p>${refreshing ? "Feed updates are being retrieved." : "Last refresh: " + esc(last)}</p></div></div><section class="activity-errors"><h3>Feed problems <span>${errors.length}</span></h3>${errors.length ? errors.map(f => `<div class="activity-feed"><button type="button" data-activity-feed="${esc(f.id)}"><strong>${esc(feedDisplayTitle(f))}</strong><small>${esc(f.error)}</small></button><button type="button" data-activity-retry="${esc(f.id)}">Retry</button></div>`).join("") : '<p class="muted">All subscribed feeds are healthy.</p>'}</section>`;
+}
+function showActivityCenter() { renderActivityCenter(); $("#activityDialog").showModal(); }
+const COMMANDS = [
+  ["all","All articles","Library",()=>goView("all")],
+  ["unread","Open unread articles","Library",()=>goView("unread")],
+  ["queue","Open reading queue","Library",()=>goView("queue")],
+  ["saved","Open saved articles","Library",()=>goView("saved")],
+  ["snoozed","Open snoozed articles","Library",()=>goView("snoozed")],
+  ["highlights","Open highlights","Library",()=>goView("highlights")],
+  ["refresh","Refresh all feeds","Feeds",()=>refresh()],
+  ["add","Add a feed","Feeds",()=>showFeed()],
+  ["search","Search articles","Navigation",()=>$("#search").focus()],
+  ["settings","Open settings","Application",()=>showSettings()],
+  ["activity","Open activity center","Application",()=>showActivityCenter()],
+  ["sidebar","Toggle feed sidebar","Layout",()=>toggleSidebar()],
+  ["focus","Toggle focus reading mode","Layout",()=>toggleFocusMode()],
+  ["fullscreen","Toggle full screen","Layout",()=>toggleFullscreen()],
+  ["mark-read","Mark visible articles read","Articles",()=>markVisibleRead()],
+  ["export","Export subscriptions (OPML)","Data",()=>exportOPML()]
+];
+let commandActiveIndex = 0;
+function renderCommandResults() {
+  const q = ($("#commandInput")?.value || "").trim().toLowerCase();
+  const matches = COMMANDS.filter(c => (c[1] + " " + c[2]).toLowerCase().includes(q));
+  commandActiveIndex = Math.min(commandActiveIndex, Math.max(0, matches.length - 1));
+  $("#commandResults").innerHTML = matches.length ? matches.map((c,i)=>`<button type="button" role="option" aria-selected="${i===commandActiveIndex}" data-command-id="${c[0]}"><span><strong>${esc(c[1])}</strong><small>${esc(c[2])}</small></span><kbd>${i===commandActiveIndex ? "↵" : ""}</kbd></button>`).join("") : '<p class="muted">No matching commands.</p>';
+}
+function runCommand(id) {
+  const command = COMMANDS.find(c => c[0] === id);
+  if (!command) return;
+  $("#commandDialog").close();
+  command[3]();
+}
+function showCommandPalette() {
+  const dialog = $("#commandDialog");
+  if (!dialog || dialog.open) return;
+  $("#commandInput").value = "";
+  commandActiveIndex = 0;
+  renderCommandResults();
+  dialog.showModal();
+  $("#commandInput").focus();
+}
+const PANE_PRESETS = {standard:[250,400],compact:[205,320],reading:[190,320]};
+function applyPanePreset(name) {
+  if (name === "custom") return;
+  const sizes = PANE_PRESETS[name];
+  if (!sizes) return;
+  state.settings.sidebarWidth = sizes[0];
+  state.settings.listWidth = sizes[1];
+  local(S,state.settings);
+  applyPaneWidths();
+  const select = $("#panePreset"); if (select) select.value = name;
+}
+function updatePanePresetSelect() {
+  const select = $("#panePreset");
+  if (!select) return;
+  const found = Object.entries(PANE_PRESETS).find(([,sizes]) => sizes[0] === Number(state.settings.sidebarWidth) && sizes[1] === Number(state.settings.listWidth));
+  select.value = found ? found[0] : "custom";
+}
+function updateFocusButton() {
+  const button = $("#appFocus");
+  if (!button) return;
+  const active = document.body.classList.contains("focus-mode");
+  button.setAttribute("aria-pressed",String(active));
+  button.textContent = active ? "Exit focus" : "Focus";
+  button.title = active ? "Exit focus reading mode" : "Focus reading mode";
+}
+function toggleFocusMode() {
+  if (!document.body.classList.contains("focus-mode") && !state.selected) {
+    const first = visible()[0];
+    if (!first) { toast("Open an article before entering focus mode."); return; }
+    openItem(first.id);
+  }
+  document.body.classList.toggle("focus-mode");
+  updateFocusButton();
+}
+function bindApplicationChrome() {
+  $("#commandButton").onclick = showCommandPalette;
+  $("#appSearch").onclick = () => { $("#search").focus(); if (matchMedia("(max-width:820px)").matches) $("#sidebar").classList.add("open"), $("#scrim").classList.add("show"); };
+  $("#appRefresh").onclick = () => refresh();
+  $("#appAdd").onclick = showFeed;
+  $("#appSettings").onclick = showSettings;
+  $("#activityButton").onclick = showActivityCenter;
+  $("#appFocus").onclick = toggleFocusMode;
+  $("#panePreset").onchange = e => applyPanePreset(e.target.value);
+  $("#commandInput").addEventListener("input", () => { commandActiveIndex=0; renderCommandResults(); });
+  $("#commandInput").addEventListener("keydown", e => {
+    const options = [...$("#commandResults").querySelectorAll("[data-command-id]")];
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); commandActiveIndex = (commandActiveIndex + (e.key === "ArrowDown" ? 1 : -1) + options.length) % Math.max(1,options.length); renderCommandResults(); }
+    if (e.key === "Enter" && options.length) { e.preventDefault(); const active = $("#commandResults").querySelector('[aria-selected="true"]') || options[0]; if(active) runCommand(active.dataset.commandId); }
+  });
+  $("#commandResults").addEventListener("click", e => { const button=e.target.closest("[data-command-id]"); if(button) runCommand(button.dataset.commandId); });
+  $("#mobileMore").onclick = () => $("#moreDialog").showModal();
+  $("#moreDone").onclick = () => $("#moreDialog").close();
+  $("#moreFeeds").onclick = () => { $("#moreDialog").close(); $("#sidebar").classList.add("open"); $("#scrim").classList.add("show"); };
+  $("#moreSearch").onclick = () => { $("#moreDialog").close(); $("#sidebar").classList.add("open"); $("#scrim").classList.add("show"); $("#search").focus(); };
+  $("#moreAdd").onclick = () => { $("#moreDialog").close(); showFeed(); };
+  $("#moreRefresh").onclick = () => { $("#moreDialog").close(); refresh(); };
+  $("#moreActivity").onclick = () => { $("#moreDialog").close(); showActivityCenter(); };
+  $("#moreSettings").onclick = () => { $("#moreDialog").close(); showSettings(); };
+  $("#activityClose").onclick = $("#activityDone").onclick = () => $("#activityDialog").close();
+  $("#activityRefresh").onclick = () => refresh();
+  document.addEventListener("click", async e => {
+    const bulk = e.target.closest("[data-bulk]");
+    if (bulk) { await runBulkAction(bulk.dataset.bulk); return; }
+    const activityFeed = e.target.closest("[data-activity-feed]");
+    if (activityFeed) { $("#activityDialog").close(); showFeedError(activityFeed.dataset.activityFeed); return; }
+    const retry = e.target.closest("[data-activity-retry]");
+    if (retry) {
+      const feed = state.feeds.find(f=>f.id===retry.dataset.activityRetry);
+      if (!feed) return;
+      retry.disabled = true; await refreshFeed(feed); saveFeeds(); render(); renderActivityCenter(); return;
+    }
+    const command = e.target.closest("[data-command-id]");
+    if (command) runCommand(command.dataset.commandId);
+  });
+  $("#articleList").addEventListener("pointerdown", e => {
+    if (e.pointerType !== "touch" || e.target.closest("button,a,input,select")) return;
+    const row=e.target.closest("[data-item]"); if(!row) return;
+    row.dataset.swipeStart = [e.clientX,e.clientY].join(",");
+  });
+  $("#articleList").addEventListener("pointerup", async e => {
+    const row=e.target.closest("[data-item]"); if(!row?.dataset.swipeStart) return;
+    const [x,y]=row.dataset.swipeStart.split(",").map(Number); delete row.dataset.swipeStart;
+    const dx=e.clientX-x, dy=e.clientY-y;
+    if(Math.abs(dx)<75 || Math.abs(dx)<Math.abs(dy)*1.25) return;
+    const item=state.items.find(i=>i.id===row.dataset.item); if(!item) return;
+    swipeHandled=true;
+    if(dx>0){item.read=!item.read;item.readAt=item.read?Date.now():null;await put(item);renderNav();renderList();toast(item.read?"Marked read.":"Marked unread.");}
+    else {item.saved=!item.saved;await put(item);renderNav();renderList();toast(item.saved?"Saved article.":"Removed from saved.");}
+  });
+  $("#reader").addEventListener("pointerdown", e => {
+    if(e.pointerType!=="touch" || e.target.closest("a,button,input,select,audio,video")) return;
+    $("#reader").dataset.swipeStart=[e.clientX,e.clientY].join(",");
+  });
+  $("#reader").addEventListener("pointerup", e => {
+    const raw=$("#reader").dataset.swipeStart; if(!raw) return; delete $("#reader").dataset.swipeStart;
+    const [x,y]=raw.split(",").map(Number), dx=e.clientX-x, dy=e.clientY-y;
+    if(Math.abs(dx)<90 || Math.abs(dx)<Math.abs(dy)*1.3) return;
+    const items=visible(), index=items.findIndex(i=>i.id===state.selected), next=items[index+(dx<0?1:-1)];
+    if(next) openItem(next.id);
+  });
+  window.addEventListener("online",renderActivityCenter);
+  window.addEventListener("offline",renderActivityCenter);
+  updatePanePresetSelect();
+  updateFocusButton();
 }
 
 function bind() {
@@ -4545,9 +4782,15 @@ function bind() {
     const noteDel = e.target.closest("[data-note-delete]");
     if (noteDel) { const x2 = selectedItem(); if (x2) { setArticleNote(x2.id, ""); renderReader(x2); toast("Note deleted."); } return; }
     const row = e.target.closest("[data-item]");
-    if (row) { openItem(row.dataset.item); return; }
+    if (row) {
+      if (swipeHandled) { swipeHandled = false; return; }
+      if (selectedArticleIds.size || e.shiftKey) { toggleArticleSelection(row.dataset.item, e.shiftKey); return; }
+      openItem(row.dataset.item); return;
+    }
   });
   document.addEventListener("keydown", e => {
+    const selectButton = e.target.closest?.("[data-select-item]");
+    if (selectButton) { e.preventDefault(); toggleArticleSelection(selectButton.dataset.selectItem, e.shiftKey); }
     const row = e.target.closest?.("[data-item]");
     // Only when the row itself is focused: an inner button (read/save)
     // must keep its own Enter/Space behavior.
@@ -5028,6 +5271,11 @@ function bind() {
       e.preventDefault();
       return;
     }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      showCommandPalette();
+      return;
+    }
     if (editable || dialogOpen) return;
     if (handleVimNavigation(e)) return;
     if (e.key === "Escape") {
@@ -5094,6 +5342,7 @@ function bind() {
     e.preventDefault();
     runShortcutAction(action, e);
   };
+  bindApplicationChrome();
   // Sidebar drag and drop (#182).
   setupFeedDrag();
 }
