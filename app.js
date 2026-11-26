@@ -4595,8 +4595,6 @@ function bindApplicationChrome() {
       if (!feed) return;
       retry.disabled = true; await refreshFeed(feed); saveFeeds(); render(); renderActivityCenter(); return;
     }
-    const command = e.target.closest("[data-command-id]");
-    if (command) runCommand(command.dataset.commandId);
   });
   $("#articleList").addEventListener("pointerdown", e => {
     if (e.pointerType !== "touch" || e.target.closest("button,a,input,select")) return;
