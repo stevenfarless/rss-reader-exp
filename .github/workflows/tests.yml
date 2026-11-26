@@ -29,6 +29,13 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check utils.js
+          node --check markdown.js
+          node --check pwa-install.js
+          node --check sw.js
       - name: Run unit tests
         run: npm test
       - name: Run browser tests
