@@ -2709,22 +2709,38 @@ function bindAudioPlayer(x) {
   }
 }
 /* ---------- text-to-speech (#105) ---------- */
-/* The Web Speech API is built into the browser: no backend, no cost.
-   The article is read in sentence chunks of about 500 characters, so
-   pause/resume and speed changes have somewhere to take effect, and
-   one failed utterance does not lose the whole article. No sentence
-   highlighting: boundary events are unreliable across browsers, so
-   this version just plays the text. */
+/* iOS WebKit can stall on long utterances and when a new utterance is
+   queued synchronously from the previous onend callback. Keep utterances
+   short and yield briefly between them. */
 function ttsChunksFor(x) {
   const text = (x.title + ". " + plainText(x.fullContent || x.content || x.summary || "")).replace(/\s+/g, " ").trim();
   const sentences = text.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) || [text];
   const chunks = [];
-  let cur = "";
-  for (const s of sentences) {
-    if (cur && (cur + s).length > 500) { chunks.push(cur.trim()); cur = s; }
-    else cur += s;
+  let current = "";
+  const maxLength = 220;
+  for (const sentence of sentences) {
+    let remaining = sentence.trim();
+    while (remaining.length) {
+      const available = maxLength - current.length;
+      if (remaining.length <= available) {
+        current += (current ? " " : "") + remaining;
+        remaining = "";
+      } else {
+        const splitAt = remaining.lastIndexOf(" ", Math.max(0, available - 1));
+        const take = splitAt > 40 ? splitAt : available;
+        const part = remaining.slice(0, take).trim();
+        if (current) chunks.push(current.trim());
+        if (part) chunks.push(part);
+        current = "";
+        remaining = remaining.slice(take).trim();
+      }
+    }
+    if (current.length >= maxLength - 30) {
+      chunks.push(current.trim());
+      current = "";
+    }
   }
-  if (cur.trim()) chunks.push(cur.trim());
+  if (current.trim()) chunks.push(current.trim());
   return chunks.filter(Boolean);
 }
 function updateTTSUI() {
@@ -2741,53 +2757,85 @@ function updateTTSUI() {
   if (pause) pause.textContent = tts?.paused ? "Resume" : "Pause";
 }
 function speakChunk() {
-  if (!tts) return;
-  if (tts.index >= tts.chunks.length) { stopTTS(); toast("Finished reading."); return; }
-  const u = new SpeechSynthesisUtterance(tts.chunks[tts.index]);
-  u.rate = state.settings.ttsRate || 1;
-  u.onend = () => {
-    if (!tts) return;
-    // Paused when the chunk ended: do not advance; resuming replays
-    // this chunk from its start rather than skipping ahead.
-    if (tts.paused) return;
-    tts.index++;
-    speakChunk();
-  };
-  u.onerror = e => {
-    if (!tts) return;
-    if (e?.error === "canceled" || e?.error === "interrupted") return;
+  if (!tts || tts.paused) return;
+  if (tts.index >= tts.chunks.length) {
     stopTTS();
-    toast("Text-to-speech stopped: the browser could not read this article.");
+    toast("Finished reading.");
+    return;
+  }
+  const session = tts;
+  const utterance = new SpeechSynthesisUtterance(session.chunks[session.index]);
+  utterance.rate = state.settings.ttsRate || 1;
+  utterance.onend = () => {
+    if (tts !== session || session.paused) return;
+    session.index++;
+    // Yield to iOS speech synthesis before submitting the next utterance.
+    session.nextTimer = setTimeout(() => {
+      session.nextTimer = null;
+      if (tts === session && !session.paused) speakChunk();
+    }, 80);
   };
-  speechSynthesis.speak(u);
-  updateTTSUI();
+  utterance.onerror = event => {
+    if (tts !== session || event?.error === "canceled") return;
+    if (event?.error === "interrupted") {
+      session.nextTimer = setTimeout(() => {
+        session.nextTimer = null;
+        if (tts === session && !session.paused && !speechSynthesis.speaking) speakChunk();
+      }, 250);
+      return;
+    }
+    stopTTS();
+    toast("Text-to-speech stopped. Check that your device has a speech voice available.");
+  };
+  try {
+    speechSynthesis.speak(utterance);
+    updateTTSUI();
+  } catch {
+    stopTTS();
+    toast("Text-to-speech could not start in this browser.");
+  }
 }
 function startTTS(x) {
-  if (!("speechSynthesis" in window)) { toast("Text-to-speech is not available in this browser."); return; }
-  stopTTS();
+  if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
+    toast("Text-to-speech is not available in this browser.");
+    return;
+  }
   const chunks = ttsChunksFor(x);
-  if (!chunks.length) { toast("Nothing to read in this article."); return; }
-  tts = { itemId: x.id, chunks, index: 0, paused: false };
+  if (!chunks.length) {
+    toast("Nothing to read in this article.");
+    return;
+  }
+  // Clear stale native speech queues even if app state was lost.
+  try { speechSynthesis.cancel(); } catch {}
+  if (tts?.nextTimer) clearTimeout(tts.nextTimer);
+  tts = { itemId: x.id, chunks, index: 0, paused: false, nextTimer: null };
   speakChunk();
 }
 function pauseTTS() {
   if (!tts || tts.paused) return;
   tts.paused = true;
+  if (tts.nextTimer) {
+    clearTimeout(tts.nextTimer);
+    tts.nextTimer = null;
+  }
   try { speechSynthesis.pause(); } catch {}
   updateTTSUI();
 }
 function resumeTTS() {
   if (!tts || !tts.paused) return;
-  tts.paused = false;
+  const session = tts;
+  session.paused = false;
   try { speechSynthesis.resume(); } catch {}
-  // If the utterance already ended while paused, resume() does
-  // nothing: restart the current chunk so playback continues.
-  setTimeout(() => { if (tts && !speechSynthesis.speaking && tts.index < tts.chunks.length) speakChunk(); }, 300);
+  // iOS may report an empty queue after a pause; restart this chunk if needed.
+  setTimeout(() => {
+    if (tts === session && !session.paused && !speechSynthesis.speaking) speakChunk();
+  }, 350);
   updateTTSUI();
 }
 function stopTTS() {
-  if (!tts) return;
+  const session = tts;
   tts = null;
+  if (session?.nextTimer) clearTimeout(session.nextTimer);
   try { speechSynthesis.cancel(); } catch {}
   updateTTSUI();
 }
