@@ -668,7 +668,7 @@ body.focus-mode .reader-content{max-width:850px}
  .feed-group{padding:8px 5px}
  .feed-row-wrap .feed-row{padding-left:5px}
  .sidebar .tag-list{max-height:100px;overflow:auto}
- body:not(.mobile-bar-top) .reader-actions .reader-back{flex:1!important;min-width:0;gap:0;border:0!important;border-radius:0!important;background:transparent!important;color:inherit!important;font-size:30px!important;font-weight:400!important;line-height:1}
+ body:not(.mobile-bar-top) .reader-actions .reader-back{flex:1!important;min-width:0;min-height:44px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;gap:0;border:0!important;border-radius:0!important;background:transparent!important;color:inherit!important;font-family:Arial,sans-serif!important;font-size:44px!important;font-weight:300!important;line-height:.75!important;position:relative;top:-2px}
 }
 @media(prefers-reduced-motion:reduce){.sidebar,.sidebar-section>summary .section-chevron{transition:none}}
 
