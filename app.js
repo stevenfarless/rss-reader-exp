@@ -2177,6 +2177,7 @@ function renderList() {
   // Save search only appears when there is an active search to save (#146).
   const ss = $("#saveSearchBtn");
   if (ss) ss.hidden = !state.query;
+  renderSelectionToolbar();
 }
 
 /* ---------- sanitising ---------- */
@@ -3037,6 +3038,11 @@ function closeReader() {
   }
 }
 function render() {
+  if (!state.selected) {
+    document.body.classList.remove("reader-open");
+    if (document.body.classList.contains("focus-mode")) document.body.classList.remove("focus-mode");
+    updateFocusButton();
+  }
   renderNav();
   renderList();
   // The tag suggestions live in one static datalist (#162), kept in step
@@ -4421,6 +4427,8 @@ function clearArticleSelection() {
 function renderSelectionToolbar() {
   const bar = $("#selectionToolbar");
   if (!bar) return;
+  const visibleIds = new Set(visible().map(x => x.id));
+  for (const itemId of selectedArticleIds) if (!visibleIds.has(itemId)) selectedArticleIds.delete(itemId);
   const count = selectedArticleIds.size;
   bar.hidden = count === 0;
   $("#selectionCount").textContent = count + " selected";
@@ -4575,7 +4583,7 @@ function bindApplicationChrome() {
   $("#moreActivity").onclick = () => { $("#moreDialog").close(); showActivityCenter(); };
   $("#moreSettings").onclick = () => { $("#moreDialog").close(); showSettings(); };
   $("#activityClose").onclick = $("#activityDone").onclick = () => $("#activityDialog").close();
-  $("#activityRefresh").onclick = () => refresh();
+  $("#activityRefresh").onclick = async () => { await refresh(); renderActivityCenter(); };
   document.addEventListener("click", async e => {
     const bulk = e.target.closest("[data-bulk]");
     if (bulk) { await runBulkAction(bulk.dataset.bulk); return; }
@@ -4604,7 +4612,9 @@ function bindApplicationChrome() {
     swipeHandled=true;
     if(dx>0){item.read=!item.read;item.readAt=item.read?Date.now():null;await put(item);renderNav();renderList();toast(item.read?"Marked read.":"Marked unread.");}
     else {item.saved=!item.saved;await put(item);renderNav();renderList();toast(item.saved?"Saved article.":"Removed from saved.");}
+    setTimeout(()=>{swipeHandled=false;},300);
   });
+  $("#articleList").addEventListener("pointercancel",()=>{swipeHandled=false;});
   $("#reader").addEventListener("pointerdown", e => {
     if(e.pointerType!=="touch" || e.target.closest("a,button,input,select,audio,video")) return;
     $("#reader").dataset.swipeStart=[e.clientX,e.clientY].join(",");
@@ -4790,7 +4800,7 @@ function bind() {
   });
   document.addEventListener("keydown", e => {
     const selectButton = e.target.closest?.("[data-select-item]");
-    if (selectButton) { e.preventDefault(); toggleArticleSelection(selectButton.dataset.selectItem, e.shiftKey); }
+    if (selectButton) { e.preventDefault(); toggleArticleSelection(selectButton.dataset.selectItem, e.shiftKey); return; }
     const row = e.target.closest?.("[data-item]");
     // Only when the row itself is focused: an inner button (read/save)
     // must keep its own Enter/Space behavior.
@@ -5134,6 +5144,8 @@ function bind() {
     applySidebarCollapsed();
   };
   window.addEventListener("popstate", () => {
+    document.body.classList.remove("reader-open", "focus-mode");
+    updateFocusButton();
     stopTTS();
     if ($("#reader").classList.contains("open") || state.selected) {
       $("#reader").classList.remove("open");
