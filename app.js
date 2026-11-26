@@ -4531,13 +4531,21 @@ let commandActiveIndex = 0;
 function renderCommandResults() {
   const q = ($("#commandInput")?.value || "").trim().toLowerCase();
   const feedCommands = state.feeds.map(f => [`feed-${f.id}`, `Open feed: ${feedDisplayTitle(f)}`, "Feeds", () => goFeedById(f.id)]);
-  const articleCommands = q.length >= 2 ? visible().filter(x => (x.title || "").toLowerCase().includes(q)).slice(0,8).map(x => [`article-${x.id}`, x.title, feedTitleFor(x), () => openItem(x.id)]) : [];
+  const articleCommands = q.length >= 2 ? state.items.filter(x => (x.title || "").toLowerCase().includes(q)).slice(0,8).map(x => [`article-${x.id}`, x.title, feedTitleFor(x), () => openItem(x.id)]) : [];
   const matches = [...COMMANDS, ...feedCommands, ...articleCommands].filter(c => (c[1] + " " + c[2]).toLowerCase().includes(q));
   commandActiveIndex = Math.min(commandActiveIndex, Math.max(0, matches.length - 1));
   $("#commandResults").innerHTML = matches.length ? matches.map((c,i)=>`<button type="button" role="option" aria-selected="${i===commandActiveIndex}" data-command-id="${c[0]}"><span><strong>${esc(c[1])}</strong><small>${esc(c[2])}</small></span><kbd>${i===commandActiveIndex ? "↵" : ""}</kbd></button>`).join("") : '<p class="muted">No matching commands.</p>';
 }
 function runCommand(id) {
-  const command = COMMANDS.find(c => c[0] === id);
+  let command = COMMANDS.find(c => c[0] === id);
+  if (!command && id.startsWith("feed-")) {
+    const feed = state.feeds.find(f => "feed-" + f.id === id);
+    if (feed) command = [id, feedDisplayTitle(feed), "Feeds", () => goFeedById(feed.id)];
+  }
+  if (!command && id.startsWith("article-")) {
+    const item = state.items.find(x => "article-" + x.id === id);
+    if (item) command = [id, item.title, feedTitleFor(item), () => openItem(item.id)];
+  }
   if (!command) return;
   $("#commandDialog").close();
   command[3]();
