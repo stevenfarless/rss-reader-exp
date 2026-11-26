@@ -676,3 +676,119 @@ test("macOS Safari receives Add to Dock instructions", async ({ browser }) => {
   await expect(page.locator("#pwaInstallInstructions")).toContainText("Add to Dock");
   await context.close();
 });
+
+
+test("mobile reader returns to the article list on a deliberate right swipe", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const request = indexedDB.open("rss-reader-cache", 3);
+    const db = await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("items", "readwrite");
+      tx.objectStore("items").put({
+        id: "swipe-back-article",
+        feedId: "swipe-back-feed",
+        feedTitle: "Swipe Test Feed",
+        title: "Swipe back test article",
+        url: "https://example.com/swipe-back",
+        summary: "A test article for swipe navigation.",
+        content: "<p>Swipe navigation test content.</p>",
+        published: new Date().toISOString(),
+        read: true,
+        saved: false,
+        queued: false,
+        tags: []
+      });
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  });
+  await page.reload();
+  await page.locator('[data-item="swipe-back-article"]').click();
+  const reader = page.locator("#reader");
+  await expect(reader).toHaveClass(/open/);
+
+  await reader.dispatchEvent("pointerdown", {
+    pointerId: 7, pointerType: "touch", isPrimary: true,
+    clientX: 150, clientY: 300, button: 0
+  });
+  await reader.dispatchEvent("pointermove", {
+    pointerId: 7, pointerType: "touch", isPrimary: true,
+    clientX: 275, clientY: 304, button: 0
+  });
+  await reader.dispatchEvent("pointerup", {
+    pointerId: 7, pointerType: "touch", isPrimary: true,
+    clientX: 275, clientY: 304, button: 0
+  });
+
+  await expect(reader).not.toHaveClass(/open/);
+  await expect(page.locator('[data-item="swipe-back-article"]')).toBeVisible();
+});
+
+test("mobile reader ignores vertical scrolling and left-edge navigation gestures", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const request = indexedDB.open("rss-reader-cache", 3);
+    const db = await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("items", "readwrite");
+      tx.objectStore("items").put({
+        id: "swipe-guard-article",
+        feedId: "swipe-guard-feed",
+        feedTitle: "Swipe Test Feed",
+        title: "Swipe guard test article",
+        url: "https://example.com/swipe-guard",
+        summary: "A test article for swipe guard behavior.",
+        content: "<p>Swipe guard test content.</p>",
+        published: new Date().toISOString(),
+        read: true,
+        saved: false,
+        queued: false,
+        tags: []
+      });
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  });
+  await page.reload();
+  await page.locator('[data-item="swipe-guard-article"]').click();
+  const reader = page.locator("#reader");
+
+  await reader.dispatchEvent("pointerdown", {
+    pointerId: 8, pointerType: "touch", isPrimary: true,
+    clientX: 150, clientY: 300, button: 0
+  });
+  await reader.dispatchEvent("pointermove", {
+    pointerId: 8, pointerType: "touch", isPrimary: true,
+    clientX: 158, clientY: 390, button: 0
+  });
+  await reader.dispatchEvent("pointerup", {
+    pointerId: 8, pointerType: "touch", isPrimary: true,
+    clientX: 158, clientY: 390, button: 0
+  });
+  await expect(reader).toHaveClass(/open/);
+
+  await reader.dispatchEvent("pointerdown", {
+    pointerId: 9, pointerType: "touch", isPrimary: true,
+    clientX: 10, clientY: 300, button: 0
+  });
+  await reader.dispatchEvent("pointermove", {
+    pointerId: 9, pointerType: "touch", isPrimary: true,
+    clientX: 150, clientY: 304, button: 0
+  });
+  await reader.dispatchEvent("pointerup", {
+    pointerId: 9, pointerType: "touch", isPrimary: true,
+    clientX: 150, clientY: 304, button: 0
+  });
+  await expect(reader).toHaveClass(/open/);
+});
