@@ -1,3 +1,10 @@
+## 1.10.4
+
+- Automatically collapse the desktop sidebar into its icon rail when its configured width drops below 230px.
+- Preserve the user's manual collapse preference independently from automatic width-based collapse.
+- Expanding an automatically collapsed sidebar restores a usable 230px width; resizing the sidebar across the threshold updates its mode.
+- Add browser coverage for automatic collapse and expansion.
+
 # Changelog
 
 ## [1.10.3] - 2026-11-26

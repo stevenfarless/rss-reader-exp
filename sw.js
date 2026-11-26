@@ -1,4 +1,4 @@
-const CACHE = "rss-reader-shell-v85";
+const CACHE = "rss-reader-shell-v86";
 const RUNTIME_CACHE = "rss-reader-runtime-v8";
 const RUNTIME_MAX = 50;
 const FILES = ["./", "./index.html", "./styles.css", "./markdown.js", "./purify.min.js", "./utils.js", "./app.js", "./pwa-install.js", "./manifest.webmanifest", "./assets/icon.svg", "./assets/icon-192.png", "./assets/icon-512.png", "./assets/icon-maskable-512.png", "./assets/apple-touch-icon.png", "./fonts/GentiumBookPlus-Regular.woff2", "./fonts/GentiumBookPlus-Bold.woff2", "./fonts/GentiumBookPlus-Italic.woff2", "./fonts/GentiumBookPlus-BoldItalic.woff2", "./fonts/InterVariable.woff2", "./fonts/InterVariable-Italic.woff2", "./fonts/NunitoVariable.woff2", "./fonts/NunitoVariable-Italic.woff2", "./fonts/Ubuntu-Regular.woff2", "./fonts/Ubuntu-Bold.woff2", "./fonts/Ubuntu-Italic.woff2", "./fonts/Ubuntu-BoldItalic.woff2"];

@@ -33,6 +33,27 @@ test("desktop sidebar controls open commands and activity without a top toolbar"
   await expect(page.locator("#activityContent")).toContainText("Feed problems");
 });
 
+test("desktop sidebar automatically collapses before its controls become cramped", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    const settings = JSON.parse(localStorage.getItem("rss-reader.settings.v1") || "{}");
+    settings.sidebarWidth = 200;
+    settings.sidebarCollapsed = false;
+    localStorage.setItem("rss-reader.settings.v1", JSON.stringify(settings));
+  });
+  await page.reload();
+
+  await expect(page.locator("body")).toHaveClass(/sidebar-collapsed/);
+  await expect(page.locator("#sideToggle")).toHaveAttribute("aria-label", "Expand sidebar");
+  await expect(page.locator("#sidebar")).toHaveCSS("width", "52px");
+
+  await page.locator("#sideToggle").click();
+  await expect(page.locator("body")).not.toHaveClass(/sidebar-collapsed/);
+  await expect(page.locator("#sidebar")).toHaveCSS("width", "230px");
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("rss-reader.settings.v1")).sidebarWidth)).toBe(230);
+});
+
 test("mobile navigation exposes primary and secondary library views", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
