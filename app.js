@@ -3085,6 +3085,8 @@ function restoreAppSession() {
   state.query = typeof session.query === "string" ? session.query.slice(0,500) : "";
   state.filter = ["all","today","week"].includes(session.filter) ? session.filter : "all";
   state.sort = session.sort === "oldest" ? "oldest" : "newest";
+  state.settings.filter = state.filter;
+  state.settings.sort = state.sort;
   $("#search").value = state.query;
   $("#searchClear").hidden = !state.query;
   state.selected = typeof session.selected === "string" && state.items.some(x => x.id === session.selected) ? session.selected : null;
