@@ -1,7 +1,7 @@
 {
   "name": "rss-reader",
   "private": true,
-  "version": "1.10.7",
+  "version": "1.10.6",
   "description": "A private RSS reader with a native-feeling desktop and mobile reading experience.",
   "scripts": {
     "test": "node --test",
