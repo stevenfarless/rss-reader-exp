@@ -4679,9 +4679,9 @@ function bindApplicationChrome() {
   $("#activityButton").onclick = showActivityCenter;
   $("#appFocus").onclick = toggleFocusMode;
   $("#panePreset").onchange = e => applyPanePreset(e.target.value);
-  $("[data-rail-commands]").forEach(button => button.addEventListener("click", showCommandPalette));
-  $("[data-rail-activity]").forEach(button => button.addEventListener("click", showActivityCenter));
-  $("[data-rail-focus]").forEach(button => button.addEventListener("click", toggleFocusMode));
+  document.querySelectorAll("[data-rail-commands]").forEach(button => button.addEventListener("click", showCommandPalette));
+  document.querySelectorAll("[data-rail-activity]").forEach(button => button.addEventListener("click", showActivityCenter));
+  document.querySelectorAll("[data-rail-focus]").forEach(button => button.addEventListener("click", toggleFocusMode));
   $("#commandInput").addEventListener("input", () => { commandActiveIndex=0; renderCommandResults(); });
   $("#commandInput").addEventListener("keydown", e => {
     const options = [...$("#commandResults").querySelectorAll("[data-command-id]")];
