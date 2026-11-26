@@ -674,3 +674,10 @@ body.focus-mode .reader-content{max-width:850px}
  body:not(.mobile-bar-top) .reader-actions .reader-back .back-label{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.sidebar,.sidebar-section>summary .section-chevron{transition:none}}
+
+/* Keep the compact desktop icon rail functional with collapsible tools. */
+@media(min-width:821px){
+ body.sidebar-collapsed .sidebar>.sidebar-tools-section{display:contents!important}
+ body.sidebar-collapsed .sidebar-tools-section>summary,
+ body.sidebar-collapsed .sidebar-tools-section .sidebar-search{display:none!important}
+}
