@@ -566,6 +566,8 @@ test("settings modal is usable on narrow screens and with keyboard input", async
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
 
+  await page.locator("#menu").click();
+  await expect(page.locator("#sidebar")).toHaveClass(/open/);
   await page.locator("#settings").click();
   await content.evaluate(el => { el.scrollTop = el.scrollHeight; });
   const dialogBox = await dialog.boundingBox();
