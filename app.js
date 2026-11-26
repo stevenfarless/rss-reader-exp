@@ -4798,8 +4798,6 @@ function bindApplicationChrome() {
   const reader = $("#reader");
   let readerSwipe = null;
   const resetReaderSwipe = () => {
-    reader.classList.remove("is-swipe-tracking");
-    reader.style.removeProperty("--reader-swipe-x");
     readerSwipe = null;
   };
   reader.addEventListener("pointerdown", e => {
@@ -4836,10 +4834,6 @@ function bindApplicationChrome() {
     if (Math.sign(dx) !== gesture.direction) {
       resetReaderSwipe();
       return;
-    }
-    if (gesture.direction > 0) {
-      reader.classList.add("is-swipe-tracking");
-      reader.style.setProperty("--reader-swipe-x", Math.min(dx, 180) + "px");
     }
   });
   reader.addEventListener("pointerup", e => {
