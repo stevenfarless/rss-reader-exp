@@ -84,6 +84,22 @@ test("article selection controls appear only after entering selection mode", asy
   await expect(article.locator("[data-select-item]")).toBeHidden();
   await expect(page.locator("#selectionToolbar")).toBeHidden();
 });
+test("sidebar sections collapse independently and mobile navigation uses a full-height drawer", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const sidebar = page.locator("#sidebar");
+  await page.locator("#menu").click();
+  await expect(sidebar).toHaveClass(/open/);
+  await expect(sidebar).toHaveCSS("width", "390px");
+  await page.locator("#librarySection > summary").click();
+  await expect(page.locator("#librarySection")).not.toHaveAttribute("open", "");
+  await expect(page.locator("#feedsSection")).toHaveAttribute("open", "");
+  await page.locator("#feedsSection > summary").click();
+  await expect(page.locator("#feedsSection")).not.toHaveAttribute("open", "");
+  await page.locator("#mobileSidebarClose").click();
+  await expect(sidebar).not.toHaveClass(/open/);
+});
+
 test("mobile navigation exposes primary and secondary library views", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

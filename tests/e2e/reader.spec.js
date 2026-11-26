@@ -96,7 +96,7 @@ test("secondary navigation can be expanded and queue view is reachable", async (
   await page.goto("/");
   await page.locator("#libraryMore summary").click();
   await expect(page.locator("#libraryMore")).toHaveAttribute("open", "");
-  await page.locator('#sidebar > .nav[data-view="queue"]').click();
+  await page.locator('#librarySection .nav[data-view="queue"]').click();
   await expect(page.locator("#heading")).toHaveText("Reading queue");
 });
 
@@ -151,7 +151,7 @@ test("reading queue persists article ordering in the local library", async ({ pa
   await expect(page.locator("#queueCount")).toHaveText("0");
   await page.locator('#reader [data-reader="queue"]').click();
   await expect(page.locator("#queueCount")).toHaveText("1");
-  await page.locator('#sidebar > .nav[data-view="queue"]').click();
+  await page.locator('#librarySection .nav[data-view="queue"]').click();
   await expect(page.locator("#articleList")).toContainText("Fixture Article");
   await page.locator("#removeQueue").click();
   await expect(page.locator("#queueCount")).toHaveText("0");
@@ -566,6 +566,8 @@ test("settings modal is usable on narrow screens and with keyboard input", async
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
 
+  await page.locator("#menu").click();
+  await expect(page.locator("#sidebar")).toHaveClass(/open/);
   await page.locator("#settings").click();
   await content.evaluate(el => { el.scrollTop = el.scrollHeight; });
   const dialogBox = await dialog.boundingBox();
